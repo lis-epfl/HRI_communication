@@ -45,7 +45,7 @@ if READ_XSENS:
 count = float(0)
 
 start = timeit.timeit()
-while count < 1000:
+while count < 100:
     # sleep(1e-3)
     if READ_XSENS:
         print 'READING FROM SENSORS'
