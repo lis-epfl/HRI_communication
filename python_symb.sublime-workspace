@@ -1,0 +1,767 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"UNITY_",
+				"UNITY_INFO"
+			],
+			[
+				"sk",
+				"skel_eul\tstatement"
+			],
+			[
+				"mot",
+				"motive_data_full\tstatement"
+			],
+			[
+				"N_",
+				"N_RB_IN_SKEL\tstatement"
+			],
+			[
+				"RE",
+				"READ_XSENS"
+			],
+			[
+				"_ol",
+				"_old_turn\tint"
+			],
+			[
+				"E",
+				"ToEulerAngles()\tVector3"
+			],
+			[
+				"RO",
+				"RoundToInt(float f)\tint"
+			],
+			[
+				"desYo",
+				"desiredYOld\tfloat"
+			],
+			[
+				"tot",
+				"totalForceAligned\tVector3"
+			],
+			[
+				"Mat",
+				"Mathf\tMathf"
+			],
+			[
+				"st",
+				"standardY\tfloat"
+			],
+			[
+				"W",
+				"WRITE_TO_UNITY"
+			],
+			[
+				"UNI",
+				"UNITY_IP"
+			],
+			[
+				"fa",
+				"factorY\tfloat"
+			],
+			[
+				"de",
+				"desiredRoll\tfloat"
+			],
+			[
+				"pl",
+				"PlayCon\tPlayerController"
+			],
+			[
+				"Pla",
+				"PlayerController\tPlayerController"
+			],
+			[
+				"_rot",
+				"_rotTorqueCoeff\tfloat"
+			],
+			[
+				"Vec",
+				"Vector3\tVector3"
+			],
+			[
+				"_",
+				"_rotDragCoeff\tfloat"
+			],
+			[
+				"thr",
+				"thrust\tfloat"
+			],
+			[
+				"desr",
+				"desiredRollVel\tfloat"
+			],
+			[
+				"Ma",
+				"Mathf\tMathf"
+			],
+			[
+				"mea",
+				"measRoll\tfloat"
+			],
+			[
+				"torque",
+				"torqueRoll\tfloat"
+			],
+			[
+				"des",
+				"desiredZ\tfloat"
+			],
+			[
+				"for",
+				"forceXZ\tVector3"
+			],
+			[
+				"vec",
+				"Vector3\tVector3"
+			],
+			[
+				"ve",
+				"Vector3()\tVector3()"
+			],
+			[
+				"addre",
+				"AddRelativeTorque(Vector3 torque)\tvoid"
+			],
+			[
+				"Ve",
+				"Vector3\tVector3"
+			],
+			[
+				"l",
+				"Log(object message)\tvoid"
+			]
+		]
+	},
+	"buffers":
+	[
+		{
+			"file": "Acq_test_Optitrack.py",
+			"settings":
+			{
+				"buffer_size": 8647,
+				"encoding": "UTF-8",
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "Acq_test.py",
+			"settings":
+			{
+				"buffer_size": 4653,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "/C/Users/matteoPC/Anaconda2/lib/site-packages/numpy/lib/function_base.py",
+			"settings":
+			{
+				"buffer_size": 169604,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "test.txt",
+			"settings":
+			{
+				"buffer_size": 64,
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"file": "PSpincalc.py",
+			"settings":
+			{
+				"buffer_size": 32579,
+				"encoding": "UTF-8",
+				"line_ending": "Windows"
+			}
+		},
+		{
+			"contents": "Package Control Messages\n========================\n\nAnaconda\n--------\n\n  \n  \n                                                            |\n                _` |  __ \\    _` |   __|   _ \\   __ \\    _` |   _` |\n               (   |  |   |  (   |  (     (   |  |   |  (   |  (   |\n              \\__,_| _|  _| \\__,_| \\___| \\___/  _|  _| \\__,_| \\__,_|\n  \n                                       The Sublime Text 3 Python IDE\n  \n  \n  Welcome to anaconda, the Sublime Text 3 Python IDE. We hope you enjoy it :)\n  \n  Anaconda works fine out of the box but you can configure it to totally adapt\n  it to your needs or style.\n  \n  For a complete guide of use and configuration take a look at:\n  \n  \thttp://damnwidget.github.io/anaconda/\n  \n  Please, consider donating to maintain this project alive:\n  \n  \thttps://pledgie.com/campaigns/32230\n",
+			"settings":
+			{
+				"buffer_size": 828,
+				"line_ending": "Windows",
+				"name": "Package Control Messages",
+				"read_only": true,
+				"scratch": true
+			}
+		}
+	],
+	"build_system": "",
+	"build_system_choices":
+	[
+		[
+			[
+				[
+					"Packages/C++/C++ Single File.sublime-build",
+					""
+				],
+				[
+					"Packages/C++/C++ Single File.sublime-build",
+					"Run"
+				]
+			],
+			[
+				"Packages/C++/C++ Single File.sublime-build",
+				""
+			]
+		],
+		[
+			[
+				[
+					"Packages/Python/Python.sublime-build",
+					""
+				],
+				[
+					"Packages/Python/Python.sublime-build",
+					"Syntax Check"
+				]
+			],
+			[
+				"Packages/Python/Python.sublime-build",
+				""
+			]
+		],
+		[
+			[
+				[
+					"Packages/Python/Python.sublime-build",
+					""
+				],
+				[
+					"Packages/Python/Python.sublime-build",
+					"Syntax Check"
+				],
+				[
+					"Packages/User/python3.sublime-build",
+					""
+				]
+			],
+			[
+				"Packages/Python/Python.sublime-build",
+				""
+			]
+		]
+	],
+	"build_varint": "",
+	"command_palette":
+	{
+		"height": 392.0,
+		"last_filter": "pack",
+		"selected_items":
+		[
+			[
+				"pack",
+				"Package Control: Install Package"
+			],
+			[
+				"pa",
+				"Package Control: Install Package"
+			],
+			[
+				"insta",
+				"Package Control: Install Package"
+			],
+			[
+				"pac",
+				"Package Control: Install Package"
+			]
+		],
+		"width": 428.0
+	},
+	"console":
+	{
+		"height": 360.0,
+		"history":
+		[
+			"import urllib.request,os,hashlib; h = '6f4c264a24d933ce70df5dedcf1dcaee' + 'ebe013ee18cced0ef93d5f746d80ef60'; pf = 'Package Control.sublime-package'; ipp = sublime.installed_packages_path(); urllib.request.install_opener( urllib.request.build_opener( urllib.request.ProxyHandler()) ); by = urllib.request.urlopen( 'http://packagecontrol.io/' + pf.replace(' ', '%20')).read(); dh = hashlib.sha256(by).hexdigest(); print('Error validating download (got %s instead of %s), please try manual install' % (dh, h)) if dh != h else open(os.path.join( ipp, pf), 'wb' ).write(by)",
+			"https://www.facebook.com/events/1354247184630574/?acontext=%7B%22ref%22%3A%2229%22%2C%22ref_notif_type%22%3A%22event_joined_nearby%22%2C%22action_history%22%3A%22null%22%7D"
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"expanded_folders":
+	[
+		"/C/Users/matteoPC/Documents/GitHub/Python_acquisition"
+	],
+	"file_history":
+	[
+		"/C/Users/matteoPC/Documents/GitHub/Python_acquisition/test_skelall_eul.txt",
+		"/C/Users/matteoPC/Anaconda2/lib/site-packages/numpy/core/shape_base.py",
+		"/C/Users/matteoPC/Documents/GitHub/Python_acquisition/test_skelall.txt",
+		"/C/Users/matteoPC/Documents/GitHub/Python_acquisition/test_boneall.txt",
+		"/C/Users/matteoPC/Documents/GitHub/Python_acquisition/test_1.txt",
+		"/C/Users/matteoPC/Documents/GitHub/Python_acquisition/Acq_test.py",
+		"/C/Users/matteoPC/Documents/GitHub/Python_acquisition/test.txt",
+		"/C/Users/matteoPC/Documents/GitHub/Python_acquisition/python_symb.sublime-project",
+		"/C/Users/matteoPC/Documents/GitHub/Python_acquisition/Acq_test_Optitrack.py",
+		"/C/Users/matteoPC/Documents/GitHub/NatNetSDK/Samples/bin/x64/Client-output.pts",
+		"/C/Users/matteoPC/Documents/GitHub/Wearable-Software/.git/config",
+		"/C/boost_1_66_0/boost/asio.hpp",
+		"/C/Users/matteoPC/Desktop/NatNetSDK/Samples/PythonClient/PythonSample.py",
+		"/C/Users/matteoPC/Desktop/NatNetSDK/Samples/PythonClient/NatNetClient.py",
+		"/C/Users/matteoPC/Desktop/NatNetSDK/Samples/bin/x64/Client-output.pts",
+		"/C/Users/matteoPC/Desktop/NatNetSDK/Samples/SampleClient/Client-output.pts",
+		"/C/Users/matteoPC/Desktop/NatNetSDK 3/Samples/PythonClient/NatNetClient.py",
+		"/C/Users/matteoPC/Desktop/NatNetSDK 3/Samples/PythonClient/PythonSample.py",
+		"/C/Users/matteoPC/AppData/Roaming/Sublime Text 3/Packages/User/python3.sublime-build",
+		"/C/Users/matteoPC/Documents/GitHub/Quad_UNITY/Assets/_Assets/Scripts/UDPCommunication.cs",
+		"/C/Users/matteoPC/Documents/GitHub/NatNetSDK/Samples/SampleClient/SampleClient_1.cpp",
+		"/C/Users/matteoPC/Documents/GitHub/NatNetSDK/Samples/SampleClient/SampleClient.cpp",
+		"/C/Users/matteoPC/Documents/GitHub/NatNetSDK/Samples/SampleClient_1/SampleClient_1.cpp",
+		"/C/Users/matteoPC/Documents/GitHub/Quad_UNITY/Assets/_Assets/Scripts/Triangle.cs",
+		"/C/Users/matteoPC/Documents/GitHub/Quad_UNITY/Assets/_Assets/Scripts/CameraController.cs",
+		"/C/Users/matteoPC/Documents/GitHub/Quad_UNITY/Assets/_Assets/Scripts/GeneratePath.cs",
+		"/C/Users/matteoPC/Documents/GitHub/Quad_UNITY/Assets/_Assets/Scripts/GenerateInfinite.cs",
+		"/C/Users/matteoPC/Documents/GitHub/Quad_UNITY/Assets/_Assets/Scripts/PlayerController.cs",
+		"/C/Users/matteoPC/Documents/GitHub/Quad_UNITY/Assets/_Assets/Scripts/PIDController.cs",
+		"/C/Users/matteoPC/Documents/GitHub/Quad_UNITY/Assets/_Assets/Scripts/NumberHolder.cs",
+		"/C/Users/matteoPC/Documents/GitHub/Quad_UNITY/Assets/_Assets/Scripts/GenerateTube.cs",
+		"/C/Users/matteoPC/Documents/GitHub/Quad_UNITY/Assets/_Assets/Scripts/GenerateTerrain.cs",
+		"/C/Users/matteoPC/Documents/GitHub/Wearable-Software/Main.py",
+		"/C/Users/matteoPC/Documents/GitHub/Wearable-Software/Cursor.py",
+		"/C/Users/matteoPC/Documents/GitHub/Quad_UNITY/Assets/_Assets/Scripts/PIDController_Alternative.cs",
+		"/C/Users/matteoPC/Documents/GitHub/Quad_UNITY/Assets/_Assets/Scripts/PlayerController_Alternative.cs",
+		"/C/Users/matteoPC/Documents/Quad_UNITY/Assets/_Assets/Scripts/PIDController.cs",
+		"/C/Users/matteoPC/AppData/Roaming/Sublime Text 3/Packages/Default/Default (Windows).sublime-keymap",
+		"/C/Users/matteoPC/AppData/Roaming/Sublime Text 3/Packages/Python Flake8 Lint/Flake8Lint.sublime-settings",
+		"/D/Matteo/Learning Unity/Quad_1_1/Assets/_Assets/Scripts/PlayerController.cs",
+		"/D/GoogleDrive/Unity3D/flyexp_5_4_3/Assets/Scripts/CommandsManager.cs",
+		"/C/Libraries/boost_1_66_0/libs/asio/example/cpp03/windows/transmit_file.cpp",
+		"/D/GoogleDrive/Unity3D/flyexp_5_4_3/Assets/Scripts/Main_1.cs",
+		"/D/GoogleDrive/Unity3D/flyexp_5_4_3/Assets/Scripts/SerialCommunication.cs",
+		"/C/Libraries/boost_1_66_0/boostcpp.jam",
+		"/C/Python27/Lib/distutils/distutils.cfg",
+		"/C/Users/matteoPC/Desktop/Wrap test/Attempt_2/hello.cpp",
+		"/C/MinGW/lib/gcc/mingw32/6.3.0/include/c++/math.h",
+		"/C/MinGW/lib/gcc/mingw32/6.3.0/include/c++/cmath",
+		"/C/Users/matteoPC/Documents/GitHub/MT SDK/Examples/xda_c_cpp/console.cpp",
+		"/C/Users/matteoPC/Documents/GitHub/symbiotic/Symbody/libs/Xsens/include/xsens/xscontrol.h",
+		"/C/Users/matteoPC/Anaconda2/envs/wrapping/Lib/distutils/distutils.cfg",
+		"/C/Users/matteoPC/Desktop/Wrap test/Attempt_2/_swigdemo_module.cc",
+		"/C/Users/matteoPC/Documents/GitHub/wrapping/example.h",
+		"/C/Users/matteoPC/Documents/GitHub/wrapping/example.py",
+		"/C/Users/matteoPC/Documents/GitHub/wrapping/example.i",
+		"/C/Users/matteoPC/Documents/GitHub/wrapping/example.c",
+		"/D/Matteo/Learning Unity/Quad_1_1/Assets/ScriptsNew Folder/PlayerController.cs",
+		"/D/Matteo/Learning Unity/Quad_1_1/Assets/PIDController.cs",
+		"/C/Users/matteoPC/Documents/GitHub/Python_Interface_Cpp/swig/fibonacci/setup.py",
+		"/C/Users/matteoPC/Desktop/get-pip.py",
+		"/C/Users/matteoPC/Evernote/Databases/Attachments/example.c",
+		"/C/Users/matteoPC/Documents/GitHub/wrapping/setup_example.py",
+		"/C/Users/matteoPC/Documents/GitHub/wrapping_sip/configure.py",
+		"/C/Users/matteoPC/Documents/GitHub/wrapping_sip/example.sip",
+		"/C/ProgramData/Anaconda3/Lib/pathlib.py",
+		"/C/ProgramData/Anaconda3/libs/python36.lib",
+		"/C/ProgramData/Anaconda3/include/Python.h",
+		"/D/GoogleDrive/Unity3D/flyexp_5_4_3/Assets/Scripts/pathPlanning.cs",
+		"/C/Users/matteoPC/Documents/GitHub/wrapping/_example_module.cc",
+		"/D/GoogleDrive/Unity3D/flyexp_5_4_3/Assets/Scripts/TrajectoryManagement.cs",
+		"/C/Users/matteoPC/AppData/Roaming/Sublime Text 3/Packages/Unity Shader/UnityShader.sublime-settings",
+		"/D/Matteo/Learning Unity/Quad_1_1/Quad_1_1.sublime-project",
+		"/D/Matteo/Learning Unity/Roll a Ball/Roll a Ball/Assets/Scripts/PlayerController.cs",
+		"/C/Users/matte/Google Drive/CERN/TE-MSC-SCD/Work Folder/Software/CODE/Certificate analysis (HI-LUMI)/CERT_GUI (1).m"
+	],
+	"find":
+	{
+		"height": 30.0
+	},
+	"find_in_files":
+	{
+		"height": 0.0,
+		"where_history":
+		[
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": false,
+		"find_history":
+		[
+			"JOY",
+			"array",
+			"append",
+			"euler",
+			".)",
+			"1e",
+			"\n    print('\\nREADING FROM', Read_struct.type, '\\n')",
+			"socket",
+			"\\"
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": false,
+		"replace_history":
+		[
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"selected": 0,
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"file": "Acq_test_Optitrack.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 8647,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								7678,
+								7642
+							]
+						],
+						"settings":
+						{
+							"SL.14.region_keys":
+							[
+								"SL.flake8.Gutter.region.yellowish markup.changed.sublime_linter markup.warning.sublime_linter.dot",
+								"SL.flake8.Highlights.|region.yellowish markup.changed.sublime_linter markup.warning.sublime_linter|32",
+								"SL.flake8.Gutter.region.redish markup.deleted.sublime_linter markup.error.sublime_linter.dot",
+								"sublime_linter.protected_regions",
+								"SL.flake8.Highlights.|region.redish markup.deleted.sublime_linter markup.error.sublime_linter|32"
+							],
+							"SL.16.region_keys":
+							[
+								"SL.flake8.Highlights.|region.redish markup.deleted.sublime_linter markup.error.sublime_linter|32",
+								"sublime_linter.protected_regions",
+								"SL.flake8.Gutter.region.redish markup.deleted.sublime_linter markup.error.sublime_linter.dot",
+								"SL.flake8.Highlights.|region.yellowish markup.changed.sublime_linter markup.warning.sublime_linter|32",
+								"SL.flake8.Gutter.region.yellowish markup.changed.sublime_linter markup.warning.sublime_linter.dot"
+							],
+							"auto_complete_triggers":
+							[
+								{
+									"characters": ".",
+									"selector": "source.python - string - comment - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
+								}
+							],
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 1732.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "Acq_test.py",
+					"semi_transient": true,
+					"settings":
+					{
+						"buffer_size": 4653,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								3182,
+								3182
+							]
+						],
+						"settings":
+						{
+							"SL.28.region_keys":
+							[
+								"SL.flake8.Gutter.region.yellowish markup.changed.sublime_linter markup.warning.sublime_linter.dot",
+								"SL.flake8.Highlights.|region.yellowish markup.changed.sublime_linter markup.warning.sublime_linter|32",
+								"sublime_linter.protected_regions",
+								"SL.flake8.Highlights.|region.redish markup.deleted.sublime_linter markup.error.sublime_linter|32",
+								"SL.flake8.Gutter.region.redish markup.deleted.sublime_linter markup.error.sublime_linter.dot"
+							],
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 2161.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "/C/Users/matteoPC/Anaconda2/lib/site-packages/numpy/lib/function_base.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 169604,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								169555,
+								169555
+							]
+						],
+						"settings":
+						{
+							"SL.21.region_keys":
+							[
+								"SL.flake8.Gutter.region.yellowish markup.changed.sublime_linter markup.warning.sublime_linter.dot",
+								"SL.flake8.Highlights.|region.yellowish markup.changed.sublime_linter markup.warning.sublime_linter|32",
+								"sublime_linter.protected_regions"
+							],
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 102740.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
+					"type": "text"
+				},
+				{
+					"buffer": 3,
+					"file": "test.txt",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 64,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								0,
+								0
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/Text/Plain text.tmLanguage"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 4,
+					"type": "text"
+				},
+				{
+					"buffer": 4,
+					"file": "PSpincalc.py",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 32579,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								1011,
+								1607
+							]
+						],
+						"settings":
+						{
+							"SL.16.region_keys":
+							[
+								"SL.flake8.Highlights.|region.yellowish markup.changed.sublime_linter markup.warning.sublime_linter|32",
+								"sublime_linter.protected_regions",
+								"SL.flake8.Gutter.region.yellowish markup.changed.sublime_linter markup.warning.sublime_linter.dot"
+							],
+							"SL.20.region_keys":
+							[
+								"SL.flake8.Highlights.|region.yellowish markup.changed.sublime_linter markup.warning.sublime_linter|32",
+								"sublime_linter.protected_regions",
+								"SL.flake8.Gutter.region.yellowish markup.changed.sublime_linter markup.warning.sublime_linter.dot"
+							],
+							"syntax": "Packages/Python/Python.sublime-syntax",
+							"tab_size": 4,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 3,
+					"type": "text"
+				},
+				{
+					"buffer": 5,
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 828,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								535,
+								535
+							]
+						],
+						"settings":
+						{
+							"auto_indent": false,
+							"syntax": "Packages/Text/Plain text.tmLanguage",
+							"tab_width": 2,
+							"word_wrap": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 5,
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 30.0
+	},
+	"input":
+	{
+		"height": 0.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.SublimeLinter":
+	{
+		"height": 0.0
+	},
+	"output.SublimeLinter Messages":
+	{
+		"height": 132.0
+	},
+	"output.exec":
+	{
+		"height": 189.0
+	},
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"output.variable_get":
+	{
+		"height": 222.0
+	},
+	"pinned_build_system": "Anaconda Python Builder",
+	"project": "python_symb.sublime-project",
+	"replace":
+	{
+		"height": 56.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_symbol":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
+	},
+	"show_minimap": true,
+	"show_open_files": false,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 262.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}
