@@ -8,16 +8,23 @@ import sys
 from time import sleep
 from datetime import datetime
 
+import PSpincalc as sp
+
+import matplotlib.pyplot as plt
+
 
 # code to speed test
 
 tend = datetime.now()
-import PSpincalc as sp
 
-import sys
 
 class Socket_struct:
     pass
+
+
+class Socket_info:
+    pass
+
 
 class Bone_struct:
     pass
@@ -25,15 +32,16 @@ class Bone_struct:
 
 ##################      SETTINGS      ##################
 
+
 N_RB_IN_SKEL = 21
 
-N_READS = 100
+N_READS = 1000
 READ_MOTIVE_RB = 0
 READ_MOTIVE_SK = 1
-READ_XSENS = 1
-READ_FROM_UNITY = 1
+READ_XSENS = 0
+READ_FROM_UNITY = 0
 
-WRITE_TO_UNITY = 0
+WRITE_SK_TO_UNITY = 1
 
 OPEN_CLOSE_CONTINUOUS = 1
 
@@ -42,11 +50,17 @@ DUMMY_READ = False
 IP_MOTIVE = "127.0.0.1"   # Local MOTIVE client
 PORT_MOTIVE = 9000    # Arbitrary non-privileged port
 
-IP_UNITY = "127.0.0.6"
+IP_UNITY = "127.0.0.1"
 PORT_UNITY_READ_CONTROL = 28000
 PORT_UNITY_READ_CONTROL_INFO = 29000
 
+PORT_UNITY_WRITE_SK = 30000
+
+PORT_UNITY_WRITE_SK_CLIENT = 26000
+
+
 ##################      FUNCTIONS      ##################
+
 
 def setup(IP, PORT, ID):
     # Datagram (udp) socket
@@ -65,7 +79,7 @@ def setup(IP, PORT, ID):
     print('socket ', ID, ' bind complete')
 
     # set timeout
-    socket.settimeout(1)
+    socket.settimeout(1e-1)
 
     read_s = Socket_struct() # Create an empty socket structure
 
@@ -73,6 +87,7 @@ def setup(IP, PORT, ID):
     read_s.ID = ID
 
     return read_s
+
 
 def read(Read_struct):
     # print('\nREADING FROM', Read_struct.type, '\n')
@@ -106,7 +121,7 @@ def read(Read_struct):
         # print("Message Data (skeletal bone):", struct.unpack(strs, data), "\n")
 
         data_ump = struct.unpack(strs, data)
-            
+
         bone_s = Bone_struct()
     #         print(int(bin(data[0])[-8:], 2))
         bone_s.ID = int(bin(data_ump[0])[-8:], 2)
@@ -116,7 +131,7 @@ def read(Read_struct):
 
         bone_s.quaternion = [quaternion_t[i] for i in order]
 
-        print(bone_s.quaternion)
+        # print(bone_s.quaternion)
         bone_s.euler = sp.Q2EA(np.array(bone_s.quaternion), EulerOrder="zyx", ignoreAllChk=True)[0]
 
     elif Read_struct.ID == 'MOTIVE_SK':
@@ -172,8 +187,7 @@ def read(Read_struct):
         data = np.c_[ID, position, quaternion, euler]
 
         # sort by ID
-        data = data[data[:,0].argsort()]
-
+        data = data[data[:, 0].argsort()]
 
         return data
 
@@ -216,15 +230,20 @@ def read(Read_struct):
         # print("Message Data :", unity_control, "\n")
         return unity_info
 
-def write():
+
+def write(Write_struct, towhom, msg):
+    Write_struct.socket.sendto(msg, (towhom.IP, towhom.PORT))
+    # print('Sent', msg, towhom.IP, 'port', towhom.PORT)
     return
+
 
 ##################      IMPLEMENTATION      ##################
 
+
 if (not OPEN_CLOSE_CONTINUOUS):
-    if ( READ_MOTIVE_RB or READ_MOTIVE_SK ):
+    if (READ_MOTIVE_RB or READ_MOTIVE_SK):
         Read_motive = setup(IP_MOTIVE, PORT_MOTIVE, 'MOTIVE_RB')
-        Read_motive_sk  = Read_motive
+        Read_motive_sk = Read_motive
         Read_motive_sk.ID = 'MOTIVE_SK'
 
     if READ_FROM_UNITY:
@@ -232,6 +251,11 @@ if (not OPEN_CLOSE_CONTINUOUS):
         Read_unity_control = setup(IP_UNITY, PORT_UNITY_READ_CONTROL, 'UNITY_CONTROL')
         Read_unity_info = setup(IP_UNITY, PORT_UNITY_READ_CONTROL_INFO, 'UNITY_INFO')
 
+if WRITE_SK_TO_UNITY:
+    unity_sk_client = Socket_info()
+
+    unity_sk_client.IP = IP_UNITY
+    unity_sk_client.PORT = PORT_UNITY_WRITE_SK_CLIENT
 # if READ_XSENS:
 #     subprocess.Popen(["C:\Users\matteoPC\Documents\GitHub\Python_acquisition\StreamFromXSENS/release/StreamFromXSENS.exe"])
 
@@ -242,24 +266,25 @@ count = float(0)
 start = datetime.now()
 
 
-motive_indices = ['ID', 'pos_x', 'pos_y', 'pos_z', 'quat_r', 'quat_x', 'quat_y', 'quat_z', 'yaw', 'pitch', 'roll']
+motive_indices = ['ID', 'pos_x', 'pos_y', 'pos_z', 'quat_x', 'quat_y', 'quat_z', 'quat_w', 'yaw', 'pitch', 'roll']
 motive_data = np.array(motive_indices)
 motive_data_full = np.array
 
 while count < N_READS:
-    sleep(1e-3)
+
+    start_iter = datetime.now()
     if READ_MOTIVE_RB:
 
         for i in range(0, N_RB_IN_SKEL):
 
             data = read(Read_motive)
 
-            print('\n')
-            print(data.ID)
-            print(data.position)
-            print(data.quaternion)
-            print(data.euler)
-            print('\n')
+            # print('\n')
+            # print(data.ID)
+            # print(data.position)
+            # print(data.quaternion)
+            # print(data.euler)
+            # print('\n')
 
             ID = np.array(data.ID)
             pos = np.array(data.position)
@@ -271,23 +296,24 @@ while count < N_READS:
             bone = np.append(bone, euler)
 
             if i>1:
-                bone_all = np.vstack((bone,bone_old))
+                bone_all = np.vstack((bone, bone_old))
             else:
                 bone_all = bone
 
             bone_old = bone
 
             # print (bone)
-            print (bone_all)
+            # print (bone_all)
 
-            motive_data = np.vstack((motive_data,bone))
+            motive_data = np.vstack((motive_data, bone))
 
             motive_data_full_temp = [s + '_' for s in motive_indices]
             motive_data_full_temp = [s + str(ID) for s in motive_data_full_temp]
 
             motive_data_full = np.append(motive_data_full, motive_data_full_temp)
 
-            print(motive_data_full)
+            # print(motive_data_full)
+
     if READ_MOTIVE_SK:
 
         if OPEN_CLOSE_CONTINUOUS:
@@ -300,14 +326,14 @@ while count < N_READS:
         # make it horizontal
         skel_eul = skel_eul[:, None].T
 
-        print(skel_eul)
+        # print(skel_eul)
 
         if count == 0:
             skel_all = skel
             skel_eul_all = skel_eul
         else:
-            skel_all = np.r_[skel_all,skel_old]
-            skel_eul_all = np.r_[skel_eul_all,skel_eul_old]
+            skel_all = np.r_[skel_all, skel_old]
+            skel_eul_all = np.r_[skel_eul_all, skel_eul_old]
 
         skel_eul_old = skel_eul
         skel_old = skel
@@ -323,7 +349,7 @@ while count < N_READS:
         unity_control = read(Read_unity_control)
 
         if OPEN_CLOSE_CONTINUOUS:
-            Read_unity_control.Read_unity_control.close()
+            Read_unity_control.socket.close()
 
         if OPEN_CLOSE_CONTINUOUS:
             Read_unity_info = setup(IP_UNITY, PORT_UNITY_READ_CONTROL_INFO, 'UNITY_INFO')
@@ -331,15 +357,53 @@ while count < N_READS:
         unity_info = read(Read_unity_info)
 
         if OPEN_CLOSE_CONTINUOUS:
-            Read_unity_info.Read_unity_info.close()
+            Read_unity_info.socket.close()
 
-    count = count + 1;
+    if WRITE_SK_TO_UNITY:
+        if OPEN_CLOSE_CONTINUOUS:
+            Write_unity_sk = setup(IP_UNITY, PORT_UNITY_WRITE_SK, 'UNITY_WRITE_SK')
 
-np.savetxt('test_skelall.txt', (skel_all), delimiter=",", fmt="%s") 
-np.savetxt('test_skelall_eul.txt', (skel_eul_all), delimiter=",", fmt="%s") 
-# np.savetxt('test_boneall.txt', (motive_data), delimiter=",", fmt="%s") 
-# np.savetxt('test.txt', (motive_data), delimiter=",", fmt="%s") 
-# np.savetxt('test_1.txt', (motive_data_full), delimiter=",", fmt="%s") 
+        skel_msg = np.reshape(skel[:,:-3], 21*8)
+        arr = skel_msg.tolist()
+
+        arr = arr + [float(count)]
+
+        strs = ""
+        # one int and 7 floats, '21' times
+
+        for i in range(0, len(arr) // 4):
+            if i % 8 == 0:
+                strs += "i"
+            else:
+                strs += "f"
+
+        print(arr)
+        # print(len(arr))
+        message = struct.pack('%sf' % len(arr), *arr)
+
+        # print(message)
+        write(Write_unity_sk, unity_sk_client, message)
+
+        if OPEN_CLOSE_CONTINUOUS:
+            Write_unity_sk.socket.close()
+
+        if 0:
+            plt.axis()
+            plt.scatter(count, arr[8*2+1], c = 1)
+            plt.pause(0.0001)
+
+
+    end_iter = datetime.now()
+    count = count + 1
+
+    print('iter time = ', end_iter - start_iter)
+
+
+np.savetxt('test_skelall.txt', (skel_all), delimiter=",", fmt="%s")
+np.savetxt('test_skelall_eul.txt', (skel_eul_all), delimiter=",", fmt="%s")
+# np.savetxt('test_boneall.txt', (motive_data), delimiter=",", fmt="%s")
+# np.savetxt('test.txt', (motive_data), delimiter=",", fmt="%s")
+# np.savetxt('test_1.txt', (motive_data_full), delimiter=",", fmt="%s")
 
 end = datetime.now()
-print(end - start)
+print('total time = ', end - start)
