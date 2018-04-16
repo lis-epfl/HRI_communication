@@ -4,12 +4,20 @@
 		"selected_items":
 		[
 			[
-				"UNITY_",
-				"UNITY_INFO"
+				"PO",
+				"PORT_UNITY_WRITE_SK\tstatement"
+			],
+			[
+				"IP",
+				"IP_UNITY\tstatement"
 			],
 			[
 				"sk",
-				"skel_eul\tstatement"
+				"skel_msg"
+			],
+			[
+				"UNITY_",
+				"UNITY_INFO"
 			],
 			[
 				"mot",
@@ -143,25 +151,19 @@
 			"file": "Acq_test_Optitrack.py",
 			"settings":
 			{
-				"buffer_size": 9178,
+				"buffer_size": 10909,
 				"encoding": "UTF-8",
 				"line_ending": "Windows"
 			}
 		},
 		{
-			"file": "Acq_test.py",
+			"file": "TimeoutInput.py",
 			"settings":
 			{
-				"buffer_size": 4653,
-				"line_ending": "Windows"
-			}
-		},
-		{
-			"file": "test.txt",
-			"settings":
-			{
-				"buffer_size": 64,
-				"line_ending": "Windows"
+				"buffer_size": 2850,
+				"encoding": "UTF-8",
+				"line_ending": "Windows",
+				"name": "import sys"
 			}
 		},
 		{
@@ -291,6 +293,8 @@
 	],
 	"file_history":
 	[
+		"/C/ProgramData/Anaconda3/lib/tty.py",
+		"/C/Users/matteoPC/Documents/GitHub/Python_acquisition/test.txt",
 		"/C/Users/matteoPC/Documents/GitHub/DeepLearningCoursePracticals/dlc_practical_3_solution.py",
 		"/C/Users/matteoPC/Documents/GitHub/DeepLearningCoursePracticals/dlc_practical_1_solution.py",
 		"/C/Users/matteoPC/Anaconda2/lib/site-packages/numpy/lib/function_base.py",
@@ -301,7 +305,6 @@
 		"/C/Users/matteoPC/Documents/GitHub/Python_acquisition/test_boneall.txt",
 		"/C/Users/matteoPC/Documents/GitHub/Python_acquisition/test_1.txt",
 		"/C/Users/matteoPC/Documents/GitHub/Python_acquisition/Acq_test.py",
-		"/C/Users/matteoPC/Documents/GitHub/Python_acquisition/test.txt",
 		"/C/Users/matteoPC/Documents/GitHub/Python_acquisition/python_symb.sublime-project",
 		"/C/Users/matteoPC/Documents/GitHub/Python_acquisition/Acq_test_Optitrack.py",
 		"/C/Users/matteoPC/Documents/GitHub/NatNetSDK/Samples/bin/x64/Client-output.pts",
@@ -387,6 +390,7 @@
 		"case_sensitive": false,
 		"find_history":
 		[
+			"print",
 			"\n        ",
 			"\n        if OPEN_CLOSE_CONTINUOUS:",
 			"JOY",
@@ -424,15 +428,43 @@
 					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 9178,
+						"buffer_size": 10909,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								208,
-								208
+								690,
+								690
+							],
+							[
+								707,
+								707
+							],
+							[
+								730,
+								730
+							],
+							[
+								753,
+								753
+							],
+							[
+								772,
+								772
+							],
+							[
+								797,
+								797
+							],
+							[
+								824,
+								824
+							],
+							[
+								855,
+								855
 							]
 						],
 						"settings":
@@ -449,11 +481,22 @@
 								"SL.flake8.Highlights.|region.yellowish markup.changed.sublime_linter markup.warning.sublime_linter|32",
 								"SL.flake8.Gutter.region.yellowish markup.changed.sublime_linter markup.warning.sublime_linter.dot"
 							],
+							"SL.95.region_keys":
+							[
+							],
 							"auto_complete_triggers":
 							[
 								{
 									"characters": ".",
 									"selector": "source.python - string - comment - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
+								},
+								{
+									"characters": ".",
+									"selector": "source.python - string - constant.numeric"
 								},
 								{
 									"characters": ".",
@@ -485,7 +528,7 @@
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 0.0,
+						"translation.y": 285.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 0,
@@ -493,37 +536,33 @@
 				},
 				{
 					"buffer": 1,
-					"file": "Acq_test.py",
-					"semi_transient": true,
+					"file": "TimeoutInput.py",
+					"semi_transient": false,
 					"settings":
 					{
-						"buffer_size": 4653,
+						"buffer_size": 2850,
 						"regions":
 						{
 						},
 						"selection":
 						[
 							[
-								3182,
-								3182
+								2850,
+								2850
 							]
 						],
 						"settings":
 						{
-							"SL.28.region_keys":
+							"SL.111.region_keys":
 							[
-								"SL.flake8.Gutter.region.yellowish markup.changed.sublime_linter markup.warning.sublime_linter.dot",
-								"SL.flake8.Highlights.|region.yellowish markup.changed.sublime_linter markup.warning.sublime_linter|32",
-								"sublime_linter.protected_regions",
-								"SL.flake8.Highlights.|region.redish markup.deleted.sublime_linter markup.error.sublime_linter|32",
-								"SL.flake8.Gutter.region.redish markup.deleted.sublime_linter markup.error.sublime_linter.dot"
 							],
+							"auto_name": "import sys",
 							"syntax": "Packages/Python/Python.sublime-syntax",
 							"tab_size": 4,
 							"translate_tabs_to_spaces": true
 						},
 						"translation.x": 0.0,
-						"translation.y": 1945.0,
+						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
 					"stack_index": 1,
@@ -531,34 +570,6 @@
 				},
 				{
 					"buffer": 2,
-					"file": "test.txt",
-					"semi_transient": false,
-					"settings":
-					{
-						"buffer_size": 64,
-						"regions":
-						{
-						},
-						"selection":
-						[
-							[
-								0,
-								0
-							]
-						],
-						"settings":
-						{
-							"syntax": "Packages/Text/Plain text.tmLanguage"
-						},
-						"translation.x": 0.0,
-						"translation.y": 0.0,
-						"zoom_level": 1.0
-					},
-					"stack_index": 3,
-					"type": "text"
-				},
-				{
-					"buffer": 3,
 					"file": "PSpincalc.py",
 					"semi_transient": false,
 					"settings":
@@ -600,7 +611,7 @@
 					"type": "text"
 				},
 				{
-					"buffer": 4,
+					"buffer": 3,
 					"semi_transient": false,
 					"settings":
 					{
@@ -619,14 +630,16 @@
 						{
 							"auto_indent": false,
 							"syntax": "Packages/Text/Plain text.tmLanguage",
+							"tab_size": 2,
 							"tab_width": 2,
+							"translate_tabs_to_spaces": true,
 							"word_wrap": true
 						},
 						"translation.x": 0.0,
 						"translation.y": 0.0,
 						"zoom_level": 1.0
 					},
-					"stack_index": 4,
+					"stack_index": 3,
 					"type": "text"
 				}
 			]
@@ -638,7 +651,7 @@
 	},
 	"input":
 	{
-		"height": 0.0
+		"height": 39.0
 	},
 	"layout":
 	{

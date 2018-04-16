@@ -1,6 +1,7 @@
 
 import numpy as np
 import socket as soc
+from socket import timeout
 import struct
 import subprocess
 import sys
@@ -12,6 +13,8 @@ import PSpincalc as sp
 
 import matplotlib.pyplot as plt
 
+from enum import Enum
+
 
 # code to speed test
 
@@ -21,52 +24,92 @@ tend = datetime.now()
 class Socket_struct:
     pass
 
-
 class Socket_info:
     pass
-
 
 class Bone_struct:
     pass
 
+class Settings:
+    pass
+
+class UDP_Settings:
+    pass
+
+UDP_sett = UDP_Settings()
+
+sett = Settings()
+
+##################      MODE      ##################
+
+class Mode_enum(Enum):
+    avatar = 1
+    acquisition = 2
+    control = 3
+
+mode = Mode_enum(1)
 
 ##################      SETTINGS      ##################
 
 
+
 N_RB_IN_SKEL = 21
 
-N_READS = 1000
-READ_MOTIVE_RB = 0
-READ_MOTIVE_SK = 1
-READ_XSENS = 0
-READ_FROM_UNITY = 0
+sett.N_READS = 0
 
-WRITE_SK_TO_UNITY = 1
+sett.READ_MOTIVE_RB = 0
+sett.READ_MOTIVE_SK = 0
+sett.READ_XSENS = 0
+sett.READ_FROM_UNITY = 0
+sett.READ_QUERY_FROM_UNITY = 0
 
-OPEN_CLOSE_CONTINUOUS = 1
+sett.WRITE_SK_TO_UNITY = 0
 
-DUMMY_READ = False
+sett.OPEN_CLOSE_CONTINUOUS = 0
 
-IP_MOTIVE = "127.0.0.1"   # Local MOTIVE client
-PORT_MOTIVE = 9000    # Arbitrary non-privileged port
+sett.DUMMY_READ = False
 
-IP_UNITY = "127.0.0.1"
-PORT_UNITY_READ_CONTROL = 28000
-PORT_UNITY_READ_CONTROL_INFO = 29000
+# MOTIVE
 
-PORT_UNITY_WRITE_SK = 30000
+UDP_sett.IP_MOTIVE = "127.0.0.1"   # Local MOTIVE client
+UDP_sett.PORT_MOTIVE = 9000    # Arbitrary non-privileged port
 
-PORT_UNITY_WRITE_SK_CLIENT = 26000
+#UNITY
+
+UDP_sett.IP_UNITY = "127.0.0.1"
+UDP_sett.PORT_UNITY_READ_CONTROL = 28000
+UDP_sett.PORT_UNITY_READ_CONTROL_INFO = 29000
+
+UDP_sett.PORT_UNITY_QUERY = 30000
+
+UDP_sett.PORT_UNITY_WRITE_SK = 30000
+
+UDP_sett.PORT_UNITY_WRITE_SK_CLIENT = 26000
+
+
+if mode.name=='avatar':
+
+    sett.N_READS = 1000
+
+    sett.READ_MOTIVE_SK = 1
+
+    sett.READ_QUERY_FROM_UNITY = 1
+
+    sett.WRITE_SK_TO_UNITY = 1
+
+    sett.OPEN_CLOSE_CONTINUOUS = 1
+
+    sett.DUMMY_READ = False
 
 
 ##################      FUNCTIONS      ##################
 
 
-def setup(IP, PORT, ID):
+def setup(IP, PORT, ID, timeout = 0.1):
     # Datagram (udp) socket
     try:
         socket = soc.socket(soc.AF_INET, soc.SOCK_DGRAM)
-        print('socket created')
+        # print('socket created')
     except socket.error as msg:
         print('Failed to create socket. Error : ', msg)
         sys.exit()
@@ -76,10 +119,10 @@ def setup(IP, PORT, ID):
     except soc.error as msg:
         print('Bind failed. Error Code : ', msg)
         sys.exit()
-    print('socket ', ID, ' bind complete')
+    # print('socket ', ID, ' bind complete')
 
     # set timeout
-    socket.settimeout(1e-1)
+    socket.settimeout(timeout)
 
     read_s = Socket_struct() # Create an empty socket structure
 
@@ -136,7 +179,7 @@ def read(Read_struct):
 
     elif Read_struct.ID == 'MOTIVE_SK':
 
-        if DUMMY_READ:
+        if sett.DUMMY_READ:
             data = b'\x01\x00\x04\x00\xd0hG?\xe7sp?.\xbf\x93\xc0\\f\xbf=$\xd9j?]\xa9\x94=~\x92\xc2>'
         else:
             data, addr = Read_struct.socket.recvfrom(4096)
@@ -230,6 +273,22 @@ def read(Read_struct):
         # print("Message Data :", unity_control, "\n")
         return unity_info
 
+    elif Read_struct.ID == 'UNITY_QUERY':
+
+        try:
+            data, addr = Read_struct.socket.recvfrom(4096)
+        except timeout:
+            return 't'
+
+        if not data:
+            return None
+
+        # we receive a char
+
+        unity_query = data.decode("utf-8") 
+        print("Message Data :", unity_query, "\n")
+        return unity_query
+
 
 def write(Write_struct, towhom, msg):
     Write_struct.socket.sendto(msg, (towhom.IP, towhom.PORT))
@@ -237,25 +296,129 @@ def write(Write_struct, towhom, msg):
     return
 
 
+def read_sk_motive(sett, UDP_sett, skel_all):
+    if sett.OPEN_CLOSE_CONTINUOUS:
+        Read_motive_sk = setup(UDP_sett.IP_MOTIVE, UDP_sett.PORT_MOTIVE, 'MOTIVE_SK')
+
+    skel = read(Read_motive_sk)
+
+    # # extract euler angles
+    # skel_eul = np.reshape(skel[:,-3:], 21*3)
+    # # make it horizontal
+    # skel_eul = skel_eul[:, None].T
+
+    # print(skel_eul)
+
+    if skel_all.size == 0:
+        skel_all = skel
+        # skel_eul_all = skel_eul
+    else:
+        skel_all = np.r_[skel_all, skel]
+        # skel_eul_all = np.r_[skel_eul_all, skel_eul_old]
+
+    # skel_eul_old = skel_eul
+
+    if sett.OPEN_CLOSE_CONTINUOUS:
+        Read_motive_sk.socket.close()
+
+    return (skel, skel_all)
+
+
+def write_sk_to_unity(Write_unity_sk, client, skel):
+
+    skel_msg = np.reshape(skel[:,:-3], 21*8)
+    arr = skel_msg.tolist()
+
+    arr = arr + [float(count)]
+
+    strs = ""
+    # one int and 7 floats, '21' times
+
+    for i in range(0, len(arr) // 4):
+        if i % 8 == 0:
+            strs += "i"
+        else:
+            strs += "f"
+
+    print(arr)
+    # print(len(arr))
+    message = struct.pack('%sf' % len(arr), *arr)
+
+    # print(message)
+    write(Write_unity_sk, client, message)
+
+    if 0:
+        plt.axis()
+        plt.scatter(count, arr[8*2+1], c = 1)
+        plt.pause(0.0001)
+
+
 ##################      IMPLEMENTATION      ##################
 
 
-if (not OPEN_CLOSE_CONTINUOUS):
-    if (READ_MOTIVE_RB or READ_MOTIVE_SK):
-        Read_motive = setup(IP_MOTIVE, PORT_MOTIVE, 'MOTIVE_RB')
-        Read_motive_sk = Read_motive
-        Read_motive_sk.ID = 'MOTIVE_SK'
+# if (not OPEN_CLOSE_CONTINUOUS):
+#     if (READ_MOTIVE_RB or READ_MOTIVE_SK):
+#         Read_motive = setup(IP_MOTIVE, PORT_MOTIVE, 'MOTIVE_RB')
+#         Read_motive_sk = Read_motive
+#         Read_motive_sk.ID = 'MOTIVE_SK'
 
-    if READ_FROM_UNITY:
-        1
-        Read_unity_control = setup(IP_UNITY, PORT_UNITY_READ_CONTROL, 'UNITY_CONTROL')
-        Read_unity_info = setup(IP_UNITY, PORT_UNITY_READ_CONTROL_INFO, 'UNITY_INFO')
+    # if READ_FROM_UNITY:
+    #     1
+    #     Read_unity_control = setup(IP_UNITY, PORT_UNITY_READ_CONTROL, 'UNITY_CONTROL')
+    #     Read_unity_info = setup(IP_UNITY, PORT_UNITY_READ_CONTROL_INFO, 'UNITY_INFO')
 
-if WRITE_SK_TO_UNITY:
+skel_all = np.array([])
+
+count = 0
+
+if sett.WRITE_SK_TO_UNITY:
     unity_sk_client = Socket_info()
 
-    unity_sk_client.IP = IP_UNITY
-    unity_sk_client.PORT = PORT_UNITY_WRITE_SK_CLIENT
+    unity_sk_client.IP = UDP_sett.IP_UNITY
+    unity_sk_client.PORT = UDP_sett.PORT_UNITY_WRITE_SK_CLIENT
+
+# create unity read socket
+Read_unity_query = setup(UDP_sett.IP_UNITY, UDP_sett.PORT_UNITY_QUERY, 'UNITY_QUERY', timeout = 0.01)
+
+Write_unity_sk = Read_unity_query
+
+if mode.name=='avatar':
+    while True:
+        # create motive read socket
+        # update skeleton
+        # close motive read socket
+        (skel, skel_all) = read_sk_motive(sett, UDP_sett, skel_all)
+
+        query = ''
+
+        # check if unity query
+        unity_query = read(Read_unity_query)
+
+        # close unity read socket
+        # Write_unity_sk.socket.close()
+
+        # if query : send skeleton
+        if unity_query=='r':
+
+            print('sending skeleton to UNITY')
+
+            # create unity write socket
+            # Write_unity_sk = setup(UDP_sett.IP_UNITY, UDP_sett.PORT_UNITY_WRITE_SK, 'UNITY_WRITE_SK')
+
+            # send skeleton
+            write_sk_to_unity(Write_unity_sk, unity_sk_client, skel)
+            
+        elif unity_query=='q':
+
+            break
+
+
+        # else : skip
+        count = count + 1
+        print(count)
+
+# close unity write socket
+Write_unity_sk.socket.close()
 # if READ_XSENS:
 #     subprocess.Popen(["C:\Users\matteoPC\Documents\GitHub\Python_acquisition\StreamFromXSENS/release/StreamFromXSENS.exe"])
 
@@ -270,137 +433,82 @@ motive_indices = ['ID', 'pos_x', 'pos_y', 'pos_z', 'quat_x', 'quat_y', 'quat_z',
 motive_data = np.array(motive_indices)
 motive_data_full = np.array
 
-while count < N_READS:
+# while count < sett.N_READS:
 
-    start_iter = datetime.now()
-    if READ_MOTIVE_RB:
+#     start_iter = datetime.now()
+#     if sett.READ_FROM_UNITY:
 
-        for i in range(0, N_RB_IN_SKEL):
+#         if OPEN_CLOSE_CONTINUOUS:
+#             Read_unity_control = setup(IP_UNITY, PORT_UNITY_READ_CONTROL, 'UNITY_CONTROL')
 
-            data = read(Read_motive)
+#         unity_control = read(Read_unity_control)
 
-            # print('\n')
-            # print(data.ID)
-            # print(data.position)
-            # print(data.quaternion)
-            # print(data.euler)
-            # print('\n')
+#         if OPEN_CLOSE_CONTINUOUS:
+#             Read_unity_control.socket.close()
 
-            ID = np.array(data.ID)
-            pos = np.array(data.position)
-            quat = np.array(data.quaternion)
-            euler = np.array(data.euler)
+#         if OPEN_CLOSE_CONTINUOUS:
+#             Read_unity_info = setup(IP_UNITY, PORT_UNITY_READ_CONTROL_INFO, 'UNITY_INFO')
 
-            bone = np.append(ID, pos)
-            bone = np.append(bone, quat)
-            bone = np.append(bone, euler)
+#         unity_info = read(Read_unity_info)
 
-            if i>1:
-                bone_all = np.vstack((bone, bone_old))
-            else:
-                bone_all = bone
+#         if OPEN_CLOSE_CONTINUOUS:
+#             Read_unity_info.socket.close()
+#     if sett.READ_MOTIVE_RB:
 
-            bone_old = bone
+#         for i in range(0, N_RB_IN_SKEL):
 
-            # print (bone)
-            # print (bone_all)
+#             data = read(Read_motive)
 
-            motive_data = np.vstack((motive_data, bone))
+#             # print('\n')
+#             # print(data.ID)
+#             # print(data.position)
+#             # print(data.quaternion)
+#             # print(data.euler)
+#             # print('\n')
 
-            motive_data_full_temp = [s + '_' for s in motive_indices]
-            motive_data_full_temp = [s + str(ID) for s in motive_data_full_temp]
+#             ID = np.array(data.ID)
+#             pos = np.array(data.position)
+#             quat = np.array(data.quaternion)
+#             euler = np.array(data.euler)
 
-            motive_data_full = np.append(motive_data_full, motive_data_full_temp)
+#             bone = np.append(ID, pos)
+#             bone = np.append(bone, quat)
+#             bone = np.append(bone, euler)
 
-            # print(motive_data_full)
+#             if i>1:
+#                 bone_all = np.vstack((bone, bone_old))
+#             else:
+#                 bone_all = bone
 
-    if READ_MOTIVE_SK:
+#             bone_old = bone
 
-        if OPEN_CLOSE_CONTINUOUS:
-            Read_motive_sk = setup(IP_MOTIVE, PORT_MOTIVE, 'MOTIVE_SK')
+#             # print (bone)
+#             # print (bone_all)
 
-        skel = read(Read_motive_sk)
+#             motive_data = np.vstack((motive_data, bone))
 
-        # extract euler angles
-        skel_eul = np.reshape(skel[:,-3:], 21*3)
-        # make it horizontal
-        skel_eul = skel_eul[:, None].T
+#             motive_data_full_temp = [s + '_' for s in motive_indices]
+#             motive_data_full_temp = [s + str(ID) for s in motive_data_full_temp]
 
-        # print(skel_eul)
+#             motive_data_full = np.append(motive_data_full, motive_data_full_temp)
 
-        if count == 0:
-            skel_all = skel
-            skel_eul_all = skel_eul
-        else:
-            skel_all = np.r_[skel_all, skel_old]
-            skel_eul_all = np.r_[skel_eul_all, skel_eul_old]
+#             # print(motive_data_full)
 
-        skel_eul_old = skel_eul
-        skel_old = skel
+#     if sett.READ_MOTIVE_SK:
 
-        if OPEN_CLOSE_CONTINUOUS:
-            Read_motive_sk.socket.close()
+#         (skel, skel_all) = read_sk_motive(sett, UDP_sett, skel_all)
 
-    if READ_FROM_UNITY:
+#     if sett.WRITE_SK_TO_UNITY:
+#         write_sk_to_unity(sett, UDP_sett, skel)
 
-        if OPEN_CLOSE_CONTINUOUS:
-            Read_unity_control = setup(IP_UNITY, PORT_UNITY_READ_CONTROL, 'UNITY_CONTROL')
+#     end_iter = datetime.now()
+#     count = count + 1
 
-        unity_control = read(Read_unity_control)
-
-        if OPEN_CLOSE_CONTINUOUS:
-            Read_unity_control.socket.close()
-
-        if OPEN_CLOSE_CONTINUOUS:
-            Read_unity_info = setup(IP_UNITY, PORT_UNITY_READ_CONTROL_INFO, 'UNITY_INFO')
-
-        unity_info = read(Read_unity_info)
-
-        if OPEN_CLOSE_CONTINUOUS:
-            Read_unity_info.socket.close()
-
-    if WRITE_SK_TO_UNITY:
-        if OPEN_CLOSE_CONTINUOUS:
-            Write_unity_sk = setup(IP_UNITY, PORT_UNITY_WRITE_SK, 'UNITY_WRITE_SK')
-
-        skel_msg = np.reshape(skel[:,:-3], 21*8)
-        arr = skel_msg.tolist()
-
-        arr = arr + [float(count)]
-
-        strs = ""
-        # one int and 7 floats, '21' times
-
-        for i in range(0, len(arr) // 4):
-            if i % 8 == 0:
-                strs += "i"
-            else:
-                strs += "f"
-
-        print(arr)
-        # print(len(arr))
-        message = struct.pack('%sf' % len(arr), *arr)
-
-        # print(message)
-        write(Write_unity_sk, unity_sk_client, message)
-
-        if OPEN_CLOSE_CONTINUOUS:
-            Write_unity_sk.socket.close()
-
-        if 0:
-            plt.axis()
-            plt.scatter(count, arr[8*2+1], c = 1)
-            plt.pause(0.0001)
+#     print('iter time = ', end_iter - start_iter)
 
 
-    end_iter = datetime.now()
-    count = count + 1
-
-    print('iter time = ', end_iter - start_iter)
-
-
-np.savetxt('test_skelall.txt', (skel_all), delimiter=",", fmt="%s")
-np.savetxt('test_skelall_eul.txt', (skel_eul_all), delimiter=",", fmt="%s")
+# np.savetxt('test_skelall.txt', (skel_all), delimiter=",", fmt="%s")
+# np.savetxt('test_skelall_eul.txt', (skel_eul_all), delimiter=",", fmt="%s")
 # np.savetxt('test_boneall.txt', (motive_data), delimiter=",", fmt="%s")
 # np.savetxt('test.txt', (motive_data), delimiter=",", fmt="%s")
 # np.savetxt('test_1.txt', (motive_data_full), delimiter=",", fmt="%s")
