@@ -1,9 +1,11 @@
 import datetime 
 from datetime import datetime
 from enum import Enum
+import math
 import matplotlib.pyplot as plt
 import numpy as np
 import os
+import pandas as pd
 import PSpincalc as sp
 import socket as soc
 from socket import timeout
@@ -35,70 +37,29 @@ UDP_sett = UDP_Settings()
 
 sett = Settings()
 
+
 ##################      MODE      ##################
+
 
 class Mode_enum(Enum):
     custom = 0
     avatar = 1
     acquisition = 2
     control = 3
+    
+##################      CONSTANTS      ##################
+        
+# size of the BONE structure
+BONE_S_SIZE = 8
 
-mode = Mode_enum(2)
-
-##################      SETTINGS      ##################
-
-filename = datetime.now().strftime("%Y_%b_%d_%I:%M:%S%p")
-foldername = 'acquired_data'
-
-
+# number of bones in skeleton
 N_RB_IN_SKEL = 21
 
-sett.N_READS = 100
+AXIS = {0 : 'roll', 1 : 'pitch'}
+PHASE_ROLL = {0 : 'straight', 1 : 'up', 2 : 'down'}
+PHASE_PITCH = {0 : 'straight', 1 : 'right', 2 : 'left'}
 
-sett.READ_MOTIVE_RB = 0
-sett.READ_MOTIVE_SK = 0
-sett.READ_XSENS = 0
-sett.READ_FROM_UNITY = 0
-sett.READ_QUERY_FROM_UNITY = 0
-
-sett.WRITE_SK_TO_UNITY = 0
-
-sett.OPEN_CLOSE_CONTINUOUS = 0
-
-sett.DUMMY_READ = False
-
-# MOTIVE
-
-UDP_sett.IP_MOTIVE = "127.0.0.1"   # Local MOTIVE client
-UDP_sett.PORT_MOTIVE = 9000    # Arbitrary non-privileged port
-
-#UNITY
-
-UDP_sett.IP_UNITY = "127.0.0.1"
-UDP_sett.PORT_UNITY_READ_CONTROL = 28000
-UDP_sett.PORT_UNITY_READ_CONTROL_INFO = 29000
-
-UDP_sett.PORT_UNITY_QUERY = 30000
-
-UDP_sett.PORT_UNITY_WRITE_SK = 30000
-
-UDP_sett.PORT_UNITY_WRITE_SK_CLIENT = 26000
-
-
-if mode.name=='avatar':
-
-    sett.N_READS = 1000
-
-    sett.READ_MOTIVE_SK = 1
-
-    sett.READ_QUERY_FROM_UNITY = 1
-
-    sett.WRITE_SK_TO_UNITY = 1
-
-    sett.OPEN_CLOSE_CONTINUOUS = 1
-
-    sett.DUMMY_READ = False
-
+PHASE = {'roll' : PHASE_ROLL, 'pitch' : PHASE_ROLL}
 
 ##################      FUNCTIONS      ##################
 
@@ -107,7 +68,7 @@ def setup(IP, PORT, ID, timeout = 0.1):
     # Datagram (udp) socket
     try:
         socket = soc.socket(soc.AF_INET, soc.SOCK_DGRAM)
-        # print('socket created')
+        print('socket ', ID, ' created')
     except socket.error as msg:
         print('Failed to create socket. Error : ', msg)
         sys.exit()
@@ -117,7 +78,7 @@ def setup(IP, PORT, ID, timeout = 0.1):
     except soc.error as msg:
         print('Bind failed. Error Code : ', msg)
         sys.exit()
-    # print('socket ', ID, ' bind complete')
+    print('socket ', ID, ' bind complete')
 
     # set timeout
     socket.settimeout(timeout)
@@ -130,19 +91,33 @@ def setup(IP, PORT, ID, timeout = 0.1):
     return read_s
 
 
-def read(Read_struct):
+def udp_read(Read_struct):
     # print('\nREADING FROM', Read_struct.type, '\n')
     # receive data from client (data, addr)
 
-    if Read_struct.ID == 'MOTIVE_RB':
-
-        if DUMMY_READ:
-            data = b'\x01\x00\x04\x00\xd0hG?\xe7sp?.\xbf\x93\xc0\\f\xbf=$\xd9j?]\xa9\x94=~\x92\xc2>'
+    try:
+        data, addr = Read_struct.socket.recvfrom(4096)
+    except timeout:
+        
+        if sett.DUMMY_READ:
+            if Read_struct.ID == 'MOTIVE_SK':
+                data = []
+                one_rb = b'\x01\x00\x04\x00\xd0hG?\xe7sp?.\xbf\x93\xc0\\f\xbf=$\xd9j?]\xa9\x94=~\x92\xc2>'
+                for i in range(21):
+                    data = data + one_rb if len(data) else one_rb
+            else:
+                return 't'
         else:
-            try:
-                data, addr = Read_struct.socket.recvfrom(4096)
-            except timeout:
-                return None
+            return 't'
+        
+    return data
+
+def udp_process(data, Read_struct):
+
+    if data == 't':
+        return 't'
+    
+    if Read_struct.ID == 'MOTIVE_RB':
 
         if not data:
             return None
@@ -180,14 +155,6 @@ def read(Read_struct):
 
     elif Read_struct.ID == 'MOTIVE_SK':
 
-        if sett.DUMMY_READ:
-            data = b'\x01\x00\x04\x00\xd0hG?\xe7sp?.\xbf\x93\xc0\\f\xbf=$\xd9j?]\xa9\x94=~\x92\xc2>'
-        else:
-            try:
-                data, addr = Read_struct.socket.recvfrom(4096)
-            except timeout:
-                return None
-
         if not data:
             return None
 
@@ -205,8 +172,6 @@ def read(Read_struct):
         # print("Message Data (skeletal bone):", struct.unpack(strs, data), "\n")
 
         data_ump = struct.unpack(strs, data)
-        
-        BONE_S_SIZE = 8
 
         Q_ORDER = [3, 0, 1, 2]
 
@@ -230,25 +195,20 @@ def read(Read_struct):
                 euler = np.vstack((euler, (sp.Q2EA(np.array(quaternion), EulerOrder="zyx", ignoreAllChk=True)[0])))
             
         ID = np.array(ID)
-
+        
         data = np.c_[ID, position, quaternion, euler]
-
+        
         # sort by ID
         data = data[data[:, 0].argsort()]
 
         return data
 
-    elif Read_struct.ID == 'UNITY_CONTROL':
-
-        try:
-            data, addr = Read_struct.socket.recvfrom(4096)
-        except timeout:
-            return None
+    elif Read_struct.ID == 'UNITY_CALIB':
 
         if not data:
             return None
 
-        print("Byte Length of Message :", len(data), "\n")
+#         print("Byte Length of Message :", len(data), "\n")
         strs = ""
         for i in range(0, len(data)//4):
             strs += "f"
@@ -262,15 +222,10 @@ def read(Read_struct):
 
     elif Read_struct.ID == 'UNITY_INFO':
 
-        try:
-            data, addr = Read_struct.socket.recvfrom(4096)
-        except timeout:
-            return None
-
         if not data:
             return None
 
-        print("Byte Length of Message :", len(data), "\n")
+#         print("Byte Length of Message :", len(data), "\n")
         strs = ""
         for i in range(0, len(data)//4):
             strs += "i"
@@ -282,34 +237,7 @@ def read(Read_struct):
         # print("Message Data :", unity_control, "\n")
         return unity_info
 
-    elif Read_struct.ID == 'UNITY_SENSORS':
-
-        try:
-            data, addr = Read_struct.socket.recvfrom(4096)
-        except timeout:
-            return None
-
-        if not data:
-            return None
-
-        print("Byte Length of Message :", len(data), "\n")
-        strs = ""
-        for i in range(0, len(data)//4):
-            strs += "f"
-
-        # print(strs)
-        # print(len(data))
-
-        unity_info = struct.unpack(strs, data)
-        # print("Message Data :", unity_control, "\n")
-        return unity_info
-
     elif Read_struct.ID == 'UNITY_QUERY':
-
-        try:
-            data, addr = Read_struct.socket.recvfrom(4096)
-        except timeout:
-            return 't'
 
         if not data:
             return None
@@ -317,7 +245,7 @@ def read(Read_struct):
         # we receive a char
 
         unity_query = data.decode("utf-8") 
-        print("Message Data :", unity_query, "\n")
+#         print("Message Data :", unity_query, "\n")
         return unity_query
 
 
@@ -325,34 +253,6 @@ def write(Write_struct, towhom, msg):
     Write_struct.socket.sendto(msg, (towhom.IP, towhom.PORT))
     # print('Sent', msg, towhom.IP, 'port', towhom.PORT)
     return
-
-
-def read_sk_motive(UDP_sett):
-
-    Read_motive_sk = setup(UDP_sett.IP_MOTIVE, UDP_sett.PORT_MOTIVE, 'MOTIVE_SK')
-
-    skel = read(Read_motive_sk)
-
-    # # extract euler angles
-    # skel_eul = np.reshape(skel[:,-3:], 21*3)
-    # # make it horizontal
-    # skel_eul = skel_eul[:, None].T
-
-    # print(skel_eul)
-
-    # if skel_all.size == 0:
-    #     skel_all = skel
-    #     # skel_eul_all = skel_eul
-    # else:
-    #     skel_all = np.r_[skel_all, skel]
-        # skel_eul_all = np.r_[skel_eul_all, skel_eul_old]
-
-    # skel_eul_old = skel_eul
-
-    Read_motive_sk.socket.close()
-
-    return (skel)
-
 
 def read_rb_motive(UDP_sett):
 
@@ -389,23 +289,6 @@ def read_rb_motive(UDP_sett):
     return bone
 
 
-def read_control_sensors_unity(UDP_sett):
-
-    Read_unity_control = setup(UDP_sett.IP_UNITY, UDP_sett.PORT_UNITY_READ_CONTROL, 'UNITY_CONTROL')
-    unity_control = read(Read_unity_control)
-    Read_unity_control.socket.close()
-
-    Read_unity_info = setup(UDP_sett.IP_UNITY, UDP_sett.PORT_UNITY_READ_CONTROL_INFO, 'UNITY_INFO')
-    unity_info = read(Read_unity_info)
-    Read_unity_info.socket.close()
-
-    Read_unity_sensors = setup(UDP_sett.IP_UNITY, UDP_sett.PORT_UNITY_READ_SENSORS, 'UNITY_SENSORS')
-    unity_sensors = read(Read_unity_sensors)
-    Read_unity_sensors.socket.close()
-
-    return (unity_control, unity_info, unity_sensors)
-
-
 def write_sk_to_unity(Write_unity_sk, client, skel):
 
     skel_msg = np.reshape(skel[: , :-3], 21 * 8)
@@ -435,7 +318,82 @@ def write_sk_to_unity(Write_unity_sk, client, skel):
         plt.pause(0.0001)
 
 
+
+##################      SETTINGS      ##################
+
+
+mode = Mode_enum(2)
+
+filename = datetime.now().strftime("%Y_%b_%d_%I_%M_%S%p")
+foldername = 'acquired_data'
+
+
+sett.N_READS = 100
+
+sett.READ_MOTIVE_RB = 0
+sett.READ_MOTIVE_SK = 0
+sett.READ_XSENS = 0
+sett.READ_FROM_UNITY = 0
+sett.READ_QUERY_FROM_UNITY = 0
+
+sett.WRITE_SK_TO_UNITY = 0
+
+sett.OPEN_CLOSE_CONTINUOUS = 0
+
+sett.DUMMY_READ = False
+
+# MOTIVE
+
+UDP_sett.IP_MOTIVE = "127.0.0.1"   # Local MOTIVE client
+UDP_sett.PORT_MOTIVE = 9000    # Arbitrary non-privileged port
+
+#UNITY
+
+UDP_sett.IP_UNITY = "127.0.0.1"
+
+UDP_sett.PORT_UNITY_QUERY = 30011
+
+UDP_sett.PORT_UNITY_READ_CALIB = 30012
+UDP_sett.PORT_UNITY_READ_CALIB_INFO = 30013
+
+
+UDP_sett.PORT_UNITY_WRITE_SK = 30000
+
+UDP_sett.PORT_UNITY_WRITE_SK_CLIENT = 26000
+
+
+if mode.name=='avatar':
+
+    sett.N_READS = 1000
+
+    sett.READ_MOTIVE_SK = 1
+
+    sett.READ_QUERY_FROM_UNITY = 1
+
+    sett.WRITE_SK_TO_UNITY = 1
+
+    sett.OPEN_CLOSE_CONTINUOUS = 1
+
+    sett.DUMMY_READ = False
+
+
+if mode.name=='acquisition':
+
+    sett.N_READS = math.inf
+
+    sett.READ_MOTIVE_SK = 1
+
+    sett.READ_QUERY_FROM_UNITY = 1
+
+    sett.WRITE_SK_TO_UNITY = 1
+
+    sett.OPEN_CLOSE_CONTINUOUS = 1
+
+    sett.DUMMY_READ = False
+
+
 ##################      IMPLEMENTATION      ##################
+
 
 start = datetime.now()
 
@@ -450,146 +408,254 @@ count = 0
 
 query = ''
 
-if mode.name=='avatar':
+# define data structure and headers
 
-    # create unity read query / write skeleton socket
-    Read_unity_query = setup(UDP_sett.IP_UNITY, UDP_sett.PORT_UNITY_QUERY, 'UNITY_QUERY', timeout = 0.01)
-    Write_unity_sk = Read_unity_query
+        
+motive_indices = np.array([])
 
-    while True:
-        # create motive read socket
-        # update skeleton
-        # close motive read socket
-        (skel, skel_all) = read_sk_motive(UDP_sett, skel_all)
+motive_indices_base = np.char.array([ 'ID', 'pos_x', 'pos_y', 'pos_z', 'quat_x', 'quat_y', 'quat_z', 'quat_w', 'yaw', 'pitch', 'roll' ])
 
-        query = ''
+for i in range(N_RB_IN_SKEL):
 
-        # check if unity query
-        unity_query = read(Read_unity_query)
+    n = np.char.array([('_' + str(i+1))])
 
-        # close unity read socket
-        # Write_unity_sk.socket.close()
+    if i==0:
+        motive_indices = motive_indices_base + (n)
+    else:
+        motive_indices = np.r_[motive_indices, motive_indices_base + (n)]
 
-        # if query : send skeleton
-        if unity_query=='r':
+        
+unity_indices_calib = np.char.array([ 'Joy 1', 'Joy 2', 'Joy 3', 'Joy 4', 'roll', 'pitch', 'yaw', 'roll_rate', 'pitch_rate', 'yaw_rate', 'vel_x', 'vel_y', 'vel_z', 'vel_semiloc_x', 'vel_semiloc_y', 'vel_semiloc_z', 'corr_roll', 'corr_pitch', 'pos_x', 'pos_y', 'pos_z', 'rot_x', 'rot_y', 'rot_z', 'rot_w', 'timestamp' ])
+unity_indices_info = np.char.array([ 'calib_axis', 'calib_phase', 'is_input_not_zero', 'instance', 'loop counter' ])
 
-            print('sending skeleton to UNITY')
+motive_data = np.array(motive_indices)
+unity_data_calib = np.array(unity_indices_calib)
+unity_data_info = np.array(unity_indices_info)
+unity_data = np.r_[unity_indices_calib, unity_indices_info]
 
-            # send skeleton
-            write_sk_to_unity(Write_unity_sk, unity_sk_client, skel)
-            
-        elif unity_query=='q':
+calib_data = np.r_[motive_indices, unity_data]
 
-            # close unity write socket
-            Write_unity_sk.socket.close()
+data = calib_data
+data = data.reshape(1, data.size)
 
-            break
+data_num = np.array([])
 
-        # else : skip
-        # count = count + 1
-        # print(count)
+skel_num = np.array([])
 
-elif mode.name=='acquisition':
+unity_num = np.array([])
 
-    # create unity read query
-    Read_unity_query = setup(UDP_sett.IP_UNITY, UDP_sett.PORT_UNITY_QUERY, 'UNITY_QUERY', timeout = 0.01)
+skel = []
 
-    motive_indices = ['ID', 'pos_x', 'pos_y', 'pos_z', 'quat_x', 'quat_y', 'quat_z', 'quat_w', 'yaw', 'pitch', 'roll']
-    motive_data = np.array(motive_indices)
+# create unity read query / write skeleton socket
+Read_unity_query = setup(UDP_sett.IP_UNITY, UDP_sett.PORT_UNITY_QUERY, 'UNITY_QUERY', timeout = 0.001)
+Write_unity_sk = Read_unity_query
 
-    # add unity data in header (TOBEDONE)
+# create unity control read socket
+Read_unity_control = setup(UDP_sett.IP_UNITY, UDP_sett.PORT_UNITY_READ_CALIB, 'UNITY_CALIB',  timeout = 0.001)
+
+# create unity info read socket
+Read_unity_info = setup(UDP_sett.IP_UNITY, UDP_sett.PORT_UNITY_READ_CALIB_INFO, 'UNITY_INFO',  timeout = 0.001)
+
+# create motive read socket
+Read_motive_sk = setup(UDP_sett.IP_MOTIVE, UDP_sett.PORT_MOTIVE, 'MOTIVE_SK',  timeout = 0.001) #1ms to read everything
     
-    while count<sett.N_READS:
-        # create motive read socket
-        # update skeleton
-        # close motive read socket
-        (skel) = read_sk_motive(UDP_sett)
+while count<sett.N_READS:
+    if mode.name=='avatar':
+
+        while count<sett.N_READS:
+            # create motive read socket
+            # update skeleton
+            # close motive read socket
+            (skel) = read_sk_motive(UDP_sett)
+
+            query = ''
+
+            # check if unity query
+            unity_query = read(Read_unity_query)
+
+            # close unity read socket
+            # Write_unity_sk.socket.close()
+
+            # if query : send skeleton
+            if unity_query=='r':
+
+                print('sending skeleton to UNITY')
+
+                # send skeleton
+                write_sk_to_unity(Write_unity_sk, unity_sk_client, skel)
+
+            elif unity_query=='q':
+
+                # close unity write socket
+                Read_unity_query.socket.close()
+
+                break
+
+    elif mode.name=='acquisition':
+        
+        startloop = datetime.now()
+
+        # consume skeleton
+        skel_data_temp = udp_read(Read_motive_sk)
+        
+        if skel_data_temp == 't':
+            print ('skel = ', skel_data_temp)
+        else:
+            print ('skel = full skeleton')
+            skel_data = skel_data_temp
+        
+        timesk = datetime.now();
+        print ('time to read skeleton =', timesk - startloop)
 
         query = ''
+        
+        # read query
+        query_data = udp_read(Read_unity_query)
+        unity_query = udp_process(query_data, Read_unity_query)
+             
+        print ('UNITY query = ', unity_query)
 
-        # check if unity query
-        unity_query = read(Read_unity_query)
-
-        # if query : send skeleton
+        timequ = datetime.now();
+        print ('time to read query =', timequ - timesk)
+        
+        # if query : read unity and skeleton, then save to csv
         if unity_query=='a':
 
-            print('saving data to csv')
+            print('collecting data')
+        
+            # read unity calibration data
+            udp_data = udp_read(Read_unity_control)
+            unity_calib = np.array(udp_process(udp_data, Read_unity_control))
+                            
+            print('unity_calib = ', unity_calib)
+            
+            # read unity info
+            udp_data = udp_read(Read_unity_info)
+            unity_calib_info = np.array(udp_process(udp_data, Read_unity_info))
+                            
+            print('unity_calib_info = ', unity_calib_info)
+            
+            timeun = datetime.now();
+            print ('time to read UNITY data =', timeun - timequ)
+            
+            # process skeleton
+            if skel_data_temp == 't':   
+                print ('using old skeleton')
+                 # use old skel
+                
+            # save skel_data in list
+            if len(skel) == 0:
+                skel = [skel_data]
+            else:
+                skel.append(skel_data)
+                
+            timesk2 = datetime.now();
+            print ('time to process second skeleton =', timesk2 - timeun)
+                             
+            
+            # reshape all to 1D array    
+            unity_calib = unity_calib.reshape(1, unity_calib.size)
+            unity_calib_info = unity_calib_info.reshape(1, unity_calib_info.size)
 
-            # read unity controls and sensors
-            (unity_control, unity_info, unity_sensors) = read_control_sensors_unity(UDP_sett)
-
-            data_row = np.r_(skel, unity_sensors, unity_info)
-
-            data = np.r_(data, data_row);
-
-        elif unity_query=='q':
-
-            break
-
-        count = count + 1
-
-if mode.name=='control':
-
-    # create unity read query / write skeleton socket
-    Read_unity_query = setup(UDP_sett.IP_UNITY, UDP_sett.PORT_UNITY_QUERY, 'UNITY_QUERY', timeout = 0.01)
-    Write_unity_sk = Read_unity_query
-
-    while True:
-        # create motive read socket
-        # update skeleton
-        # close motive read socket
-        (skel, skel_all) = read_sk_motive(sett, UDP_sett, skel_all)
-
-        query = ''
-
-        # check if unity query
-        unity_query = read(Read_unity_query)
-
-        # close unity read socket
-        # Write_unity_sk.socket.close()
-
-        # if query : send skeleton
-        if unity_query=='r':
-
-            print('sending skeleton to UNITY')
-
-            # process skeleton (TOBEDONE)
-
-            # send commands to unity (TOBEDONE)
-
+#             print(skel.size)
+#             print(unity_calib.size)
+#             print(unity_calib_info.size)
+            
+            unity_row = np.c_[unity_calib, unity_calib_info]
+            
+            if unity_num.size:
+                if unity_row.shape[1] == unity_data.size:
+                    unity_num = np.vstack([unity_num, unity_row])
+                else:
+                    print('lost frame')
+            else:
+                unity_num =  unity_row
+                
+                
         elif unity_query=='q':
 
             # close unity write socket
-            Write_unity_sk.socket.close()
+            Read_unity_query.socket.close()
+            
+            # close unity control read socket
+            Read_unity_control.socket.close()
+
+            # close unity info read socket
+            Read_unity_info.socket.close()
+            
+            # close motive read socket
+            Read_motive_sk.socket.close()
 
             break
 
-        # else : skip
-        # count = count + 1
-        # print(count)
+    if mode.name=='control':
+        
+        while True:
+            # create motive read socket
+            # update skeleton
+            # close motive read socket
+            (skel, skel_all) = read_sk_motive(sett, UDP_sett, skel_all)
 
+            query = ''
 
-# if READ_XSENS:
-#     subprocess.Popen(["C:\Users\matteoPC\Documents\GitHub\Python_acquisition\StreamFromXSENS/release/StreamFromXSENS.exe"])
+            # check if unity query
+            unity_query = read(Read_unity_query)
 
+            # close unity read socket
+            # Write_unity_sk.socket.close()
 
-#     start_iter = datetime.now()
+            # if query : send skeleton
+            if unity_query=='r':
 
-#     end_iter = datetime.now()
+                print('sending skeleton to UNITY')
 
-#     print('iter time = ', end_iter - start_iter)
+                # process skeleton (TOBEDONE)
 
+                # send commands to unity (TOBEDONE)
+
+            elif unity_query=='q':
+
+                # close unity write socket
+                Write_unity_sk.socket.close()
+
+                break
+            
+    count = count + 1
+    
+
+# process motive skeleton data
+skel_num = udp_process(skel[0], Read_motive_sk)    
+skel_num.resize(1, skel_num.size)
+
+for i in range(1, len(skel)):
+    skel_np_t = udp_process(skel[i], Read_motive_sk)    
+    skel_np_t.resize(1, skel_np_t.size)
+    skel_num = np.vstack([skel_num, skel_np_t])
+
+    
+calib_data = np.c_[skel_num, unity_num]
+data = np.vstack([data, calib_data])
 
 if not os.path.isdir(foldername):
     os.mkdir(foldername)
-
+    
+home_fol = os.getcwd()
 os.chdir(foldername)
 
+if calib_data.shape[0]>1 and calib_data.shape[1]>3:
+    filename = filename + '_' + AXIS[calib_data[-1, -5]] + '_' + PHASE[AXIS[calib_data[-1, -5]]][calib_data[-1, -4]]
+elif data.shape[0]==1:
+    print('no data acquired')
+else:
+    print('problem with data size')
+    
 np.savetxt((filename + '.txt'), (data), delimiter=",", fmt="%s")
 # np.savetxt('test_skelall_eul.txt', (skel_eul_all), delimiter=",", fmt="%s")
 # np.savetxt('test_boneall.txt', (motive_data), delimiter=",", fmt="%s")
 # np.savetxt('test.txt', (motive_data), delimiter=",", fmt="%s")
 # np.savetxt('test_1.txt', (motive_data_full), delimiter=",", fmt="%s")
+
+os.chdir(home_fol)
 
 end = datetime.now()
 print('total time = ', end - start)
