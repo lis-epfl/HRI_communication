@@ -392,6 +392,10 @@ if mode.name=='acquisition':
     sett.DUMMY_READ = False
 
 
+SUBJECTS = {'MatteoM' : 'pilot1', 'StefanoM' : 'pilot2'}
+
+subject = SUBJECTS['MatteoM']
+
 ##################      IMPLEMENTATION      ##################
 
 
@@ -425,7 +429,7 @@ for i in range(N_RB_IN_SKEL):
         motive_indices = np.r_[motive_indices, motive_indices_base + (n)]
 
         
-unity_indices_calib = np.char.array([ 'Joy 1', 'Joy 2', 'Joy 3', 'Joy 4', 'roll', 'pitch', 'yaw', 'roll_rate', 'pitch_rate', 'yaw_rate', 'vel_x', 'vel_y', 'vel_z', 'vel_semiloc_x', 'vel_semiloc_y', 'vel_semiloc_z', 'corr_roll', 'corr_pitch', 'pos_x', 'pos_y', 'pos_z', 'rot_x', 'rot_y', 'rot_z', 'rot_w', 'timestamp' ])
+unity_indices_calib = np.char.array([ 'input1', 'input2', 'input3', 'input4', 'roll', 'pitch', 'yaw', 'roll_rate', 'pitch_rate', 'yaw_rate', 'vel_x', 'vel_y', 'vel_z', 'vel_semiloc_x', 'vel_semiloc_y', 'vel_semiloc_z', 'corr_roll', 'corr_pitch', 'pos_x', 'pos_y', 'pos_z', 'rot_x', 'rot_y', 'rot_z', 'rot_w', 'timestamp' ])
 unity_indices_info = np.char.array([ 'calib_axis', 'calib_phase', 'is_input_not_zero', 'instance', 'loop counter' ])
 
 motive_data = np.array(motive_indices)
@@ -643,7 +647,7 @@ home_fol = os.getcwd()
 os.chdir(foldername)
 
 if calib_data.shape[0]>1 and calib_data.shape[1]>3:
-    filename = filename + '_' + AXIS[calib_data[-1, -5]] + '_' + PHASE[AXIS[calib_data[-1, -5]]][calib_data[-1, -4]]
+    filename = subject + '_' + filename + '_' + AXIS[calib_data[-1, -5]] + '_' + PHASE[AXIS[calib_data[-1, -5]]][calib_data[-1, -4]]
 elif data.shape[0]==1:
     print('no data acquired')
 else:
@@ -659,3 +663,5 @@ os.chdir(home_fol)
 
 end = datetime.now()
 print('total time = ', end - start)
+
+data_pd = pd.read_csv(foldername + '/' + filename + '.txt')
