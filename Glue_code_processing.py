@@ -3,7 +3,293 @@ from Glue_code import *
 
 
 
-##############################
+#########################################################
+
+    
+################# OPTITRACK CONVENTIONS #################
+
+def close_all_connections(Read_unity_query, Read_unity_control, Read_unity_info, Read_motive_sk):
+
+    # close unity write socket
+    Read_unity_query.socket.close()
+    
+    # close unity control read socket
+    Read_unity_control.socket.close()
+
+    # close unity info read socket
+    Read_unity_info.socket.close()
+    
+    # close motive read socket
+    Read_motive_sk.socket.close()
+
+def consume_motive_skeleton(Read_motive_sk):
+    # consume skeleton
+    skel_data_temp = udp_read(Read_motive_sk)
+        
+    return skel_data_temp
+
+def get_unity_query(Read_unity_query):
+
+    query = ''
+    
+    # read query
+    query_data = udp_read(Read_unity_query)
+    unity_query = udp_process(query_data, Read_unity_query)
+         
+    print ('UNITY query = ', unity_query)
+    
+    return unity_query
+
+def acquisition_routine(skel, unity_num, Read_unity_control, Read_unity_info):
+        
+    print('collecting data')
+
+    # read unity calibration data
+    udp_data = udp_read(Read_unity_control)
+    unity_calib = np.array(udp_process(udp_data, Read_unity_control))
+                    
+    print('unity_calib = ', unity_calib)
+    
+    # read unity info
+    udp_data = udp_read(Read_unity_info)
+    unity_calib_info = np.array(udp_process(udp_data, Read_unity_info))
+                    
+    print('unity_calib_info = ', unity_calib_info)
+    
+#        # process skeleton
+#        if skel_data_temp == 't':   
+#            print ('using old skeleton')
+#              use old skel
+        
+    # save skel_data in list
+    if len(skel) == 0:
+        skel = [skel_data]
+    else:
+        skel.append(skel_data)
+                     
+    
+    # reshape all to 1D array    
+    unity_calib = unity_calib.reshape(1, unity_calib.size)
+    unity_calib_info = unity_calib_info.reshape(1, unity_calib_info.size)
+
+#             print(skel.size)
+#             print(unity_calib.size)
+#             print(unity_calib_info.size)
+    
+    unity_row = np.c_[unity_calib, unity_calib_info]
+    
+    if unity_num.size:
+        if unity_row.shape[1] == unity_data.size:
+            unity_num = np.vstack([unity_num, unity_row])
+        else:
+            print('lost frame')
+    else:
+        unity_num =  unity_row
+            
+    return [skel, unity_num]
+
+def control_routine(regress_data_list, count, first_skel, df_first, y_score_all, motive_indices, used_body_parts, N_RB_IN_SKEL, acquired_first_skel, EXAMPLE_DATA = False, in_data = 0, out_data = 0):
+    
+    # if query : read unity and skeleton, then save to csv
+    
+    start = time.clock()
+        
+    # process skel data and add headers
+    
+    if  EXAMPLE_DATA:
+        skel_num = in_data[count:count+1].values
+    else:
+        skel = skel_data
+        skel = udp_process(skel, Read_motive_sk)
+        
+    if USE_DF_METHOD:
+    
+        # not converting to df anymore
+        df = pd.DataFrame(skel_num, columns = motive_indices)   
+            # remove unused columns
+            
+        df = df[my_cols]
+    else:
+        skel = np.reshape(skel_num, (N_RB_IN_SKEL,-1))
+        
+        # used body parts
+        skel = skel_keep_used_body_parts(skel, used_body_parts)
+    
+    if not acquired_first_skel:
+                 
+        if USE_DF_METHOD:   
+            # not converting to df anymore
+            df_first = pd.DataFrame(skel_num, columns = motive_indices) 
+            
+            # remove unused columns
+            
+            df_first = df_first[my_cols]
+            
+            # compute relative angles
+            
+            df_first = relativize_df(df_first)
+        else:
+            
+            first_skel = np.copy(skel)
+            
+            first_skel = relativize_skeleton(first_skel)
+    
+        acquired_first_skel = True
+        
+    
+    # compute relative angles
+    
+    if USE_DF_METHOD:
+        # df style
+#        start = time.clock()
+        df = relativize_df(df)
+#        end = time.clock()
+#        print("time to rel (old) = " + str(end-start))
+    else:
+        # np style
+#        start = time.clock()
+        skel = relativize_skeleton(skel)
+#        end = time.clock()
+#        print("time to rel (new) = " + str(end-start))
+    
+    
+    # unbias angles
+    
+    if USE_DF_METHOD:
+        # df style
+        start = time.clock()
+        # concatenate first and current skel
+        df_combined = pd.concat([df_first,df])
+        
+        # unbias angles
+#        start = time.clock()
+        df_combined = remove_bias_df(df_combined, used_body_parts)
+#        end = time.clock()
+#        print("time to bias (old) = " + str(end-start))
+        
+        df = df_combined[1:2]
+    else:
+        # np style
+#        start = time.clock()
+        skel = unbias_skeleton(skel, first_skel)
+#        end = time.clock()
+#        print("time to bias (new) = " + str(end-start))
+    
+    # compute euler angles
+    
+    if USE_DF_METHOD:
+        # df style
+#        start = time.clock()
+        df = compute_ea_df(df, used_body_parts)
+#        end = time.clock()
+#        print("time to eul (old) = " + str(end-start))
+    else:
+        # np style
+#        start = time.clock()
+        skel = compute_ea_skel(skel)
+#        end = time.clock()
+#        print("time to eul (new) = " + str(end-start))
+    
+    
+    # save input data
+    
+    if USE_DF_METHOD:
+        regress_data_list.append(df)
+    else:
+        regress_data_list.append(skel)
+    
+#            if count == 9:
+#                print('breaking')
+        
+#                break
+    
+    # normalize
+    
+    if USE_DF_METHOD:
+        # df style
+#        start = time.clock()
+        
+        for j in list(df):
+            # do not normalize quaternion components and outputs
+            if 'pos' in j or 'pitch_' in j or 'roll_' in j or 'yaw_' in j :
+                [array_norm, norm_param_t] = normalize(df[j], parameters[j])
+                df[j] = array_norm
+                
+#        end = time.clock()
+#        print("time to norm (old) = " + str(end-start))
+    else:
+        # np style
+#        start = time.clock()
+        
+        skel = skel - param_av
+        skel = skel / param_std
+                
+#        end = time.clock()
+#        print("time to norm (new) = " + str(end-start))
+    
+
+#     regression
+    
+    if USE_DF_METHOD:
+        # df style
+        skel_fake = df[feats]
+        
+        y_score = best_mapping.predict(skel_fake)
+        
+        if not len(y_score_all):
+            y_score_all = y_score.T
+        else:
+            y_score_all = np.column_stack((y_score_all,y_score.T))
+    else:
+        
+        skel_f = skel_keep_features(skel, input_data)
+        
+        skel_r = skel_f.reshape(1, -1)
+        
+        y_score = best_mapping.predict(skel_r)
+        
+        if not len(y_score_all):
+            y_score_all = y_score.T
+        else:
+            y_score_all = np.column_stack((y_score_all,y_score.T))
+            
+            
+    print('')
+    print(count)
+    print('')
+#            
+    end = time.clock()
+    print("time to process control skeleton = " + str(end-start))
+    
+    y_true = out_data[outputs].values
+    
+    res = {"reg":best_mapping,
+                "reg_type":str(best_mapping),
+                "y_true":y_true,
+                "y_score":y_score
+                }
+    
+    plot_fit_performance(res)
+    
+    
+    print(count)
+
+    # send commands to unity (TOBEDONE)
+    
+    if USE_DF_METHOD:
+        debug_info = {'df' : df,
+                      'skel' : skel_fake,
+                      'y_score' : y_score,
+                      }
+    else:
+        debug_info = {'skel' : skel,
+                      'y_score' : y_score,
+                      }
+            
+        
+        
+
+    return [regress_data_list, acquired_first_skel, first_skel, df_first, y_score_all, debug_info]
     
 ################# OPTITRACK CONVENTIONS #################
     
@@ -29,7 +315,7 @@ used_body_parts = [3, 6, 7, 8, 9, 10, 11, 12, 13]
 ##################       SETTINGS       ##################
 
 EXAMPLE_DATA = True
-USE_DF_METHOD = False
+USE_DF_METHOD = True
 
 
 mode = Mode_enum(3)
@@ -131,7 +417,7 @@ regressor_filename = subject + '_best_mapping'
 parameters_filename = subject + '_PARAM' + '.txt'
 
 if mode.name=='control':
-    data_folder = '/Users/matteomacchini/Google Drive/Matteo/EPFL/LIS/PhD/Natural_Mapping/DATA/acquired_data/'
+    data_folder = settings.data_folder
     interface_folder = data_folder + 'interfaces/'
     # load interface to file
     best_mapping = load_obj(interface_folder + regressor_filename)
@@ -223,21 +509,21 @@ elif input_data == 'quaternions':
     feats = [col for col in regression_indices if 'quat' in col]
     
 
-if not EXAMPLE_DATA:
-    # create unity read query / write skeleton socket
-    Read_unity_query = setup(UDP_sett.IP_UNITY, UDP_sett.PORT_UNITY_QUERY, 'UNITY_QUERY', timeout = 0.001)
-    Write_unity_sk = Read_unity_query
-    
-    # create unity control read socket
-    Read_unity_control = setup(UDP_sett.IP_UNITY, UDP_sett.PORT_UNITY_READ_CALIB, 'UNITY_CALIB',  timeout = 0.001)
-    
-    # create unity info read socket
-    Read_unity_info = setup(UDP_sett.IP_UNITY, UDP_sett.PORT_UNITY_READ_CALIB_INFO, 'UNITY_INFO',  timeout = 0.001)
-    
-    # create motive read socket
-    Read_motive_sk = setup(UDP_sett.IP_MOTIVE, UDP_sett.PORT_MOTIVE, 'MOTIVE_SK',  timeout = 0.001) #1ms to read everything
+#if not EXAMPLE_DATA:
+# create unity read query / write skeleton socket
+Read_unity_query = setup(UDP_sett.IP_UNITY, UDP_sett.PORT_UNITY_QUERY, 'UNITY_QUERY', timeout = 0.001)
+Write_unity_sk = Read_unity_query
+
+# create unity control read socket
+Read_unity_control = setup(UDP_sett.IP_UNITY, UDP_sett.PORT_UNITY_READ_CALIB, 'UNITY_CALIB',  timeout = 0.001)
+
+# create unity info read socket
+Read_unity_info = setup(UDP_sett.IP_UNITY, UDP_sett.PORT_UNITY_READ_CALIB_INFO, 'UNITY_INFO',  timeout = 0.001)
+
+# create motive read socket
+Read_motive_sk = setup(UDP_sett.IP_MOTIVE, UDP_sett.PORT_MOTIVE, 'MOTIVE_SK',  timeout = 0.001) #1ms to read everything
         
-else:
+if EXAMPLE_DATA:
 
     ###################        TEST        ###################
     
@@ -259,19 +545,23 @@ else:
 
     # limit loop duration
     
-    sett.N_READS = 10#len(test_data)
+    sett.N_READS = 10 # len(test_data)
+#    sett.N_READS = len(test_data)
 
     # don't wait for query
-    unity_query = 'r'
+    unity_query = 'c'
     
     y_score_all = []
     
-    plt.ion()
-    fig = plt.figure()
-    ax1 = fig.add_subplot(211)
-    ax2 = fig.add_subplot(212)
+#    plt.ion()
+#    fig = plt.figure()
+#    ax1 = fig.add_subplot(211)
+#    ax2 = fig.add_subplot(212)
              
     regress_data_list = []
+    
+    df_first = []
+    first_skel = []
     
 
 start_proc = time.clock()    
@@ -310,338 +600,60 @@ while count<sett.N_READS:
 
     elif mode.name=='acquisition':
         
-        startloop = date_t.now()
-
-        # consume skeleton
-        skel_data_temp = udp_read(Read_motive_sk)
+        skel_data_temp = consume_motive_skeleton(Read_motive_sk)
         
         if skel_data_temp == 't':
             print ('skel = ', skel_data_temp)
         else:
             print ('skel = full skeleton')
             skel_data = skel_data_temp
+    
+        unity_query = get_unity_query(Read_unity_query)
         
-        timesk = date_t.now();
-        print ('time to read skeleton =', timesk - startloop)
-
-        query = ''
-        
-        # read query
-        query_data = udp_read(Read_unity_query)
-        unity_query = udp_process(query_data, Read_unity_query)
-             
-        print ('UNITY query = ', unity_query)
-
-        timequ = date_t.now();
-        print ('time to read query =', timequ - timesk)
-        
+    
         # if query : read unity and skeleton, then save to csv
         if unity_query=='a':
-
-            print('collecting data')
         
-            # read unity calibration data
-            udp_data = udp_read(Read_unity_control)
-            unity_calib = np.array(udp_process(udp_data, Read_unity_control))
-                            
-            print('unity_calib = ', unity_calib)
-            
-            # read unity info
-            udp_data = udp_read(Read_unity_info)
-            unity_calib_info = np.array(udp_process(udp_data, Read_unity_info))
-                            
-            print('unity_calib_info = ', unity_calib_info)
-            
-            timeun = date_t.now();
-            print ('time to read UNITY data =', timeun - timequ)
-            
-            # process skeleton
-            if skel_data_temp == 't':   
-                print ('using old skeleton')
-                 # use old skel
-                
-            # save skel_data in list
-            if len(skel) == 0:
-                skel = [skel_data]
-            else:
-                skel.append(skel_data)
-                
-            timesk2 = date_t.now();
-            print ('time to process second skeleton =', timesk2 - timeun)
-                             
-            
-            # reshape all to 1D array    
-            unity_calib = unity_calib.reshape(1, unity_calib.size)
-            unity_calib_info = unity_calib_info.reshape(1, unity_calib_info.size)
-
-#             print(skel.size)
-#             print(unity_calib.size)
-#             print(unity_calib_info.size)
-            
-            unity_row = np.c_[unity_calib, unity_calib_info]
-            
-            if unity_num.size:
-                if unity_row.shape[1] == unity_data.size:
-                    unity_num = np.vstack([unity_num, unity_row])
-                else:
-                    print('lost frame')
-            else:
-                unity_num =  unity_row
-                
-                
+            [skel, unity_num] = acquisition_routine(skel, unity_num, Read_motive_sk, Read_unity_query, Read_unity_control, Read_unity_info)
+        
         elif unity_query=='q':
-
-            # close unity write socket
-            Read_unity_query.socket.close()
+    
+            close_all_connections(Read_unity_query, Read_unity_control, Read_unity_info, Read_motive_sk)
             
-            # close unity control read socket
-            Read_unity_control.socket.close()
-
-            # close unity info read socket
-            Read_unity_info.socket.close()
-            
-            # close motive read socket
-            Read_motive_sk.socket.close()
-
             break
-
+        
     if mode.name=='control':
-
+        
         if not EXAMPLE_DATA:
         
-            startloop = date_t.now()
-    
-            # consume skeleton
-            skel_data_temp = udp_read(Read_motive_sk)
+            skel_data_temp = consume_motive_skeleton(Read_motive_sk)
             
             if skel_data_temp == 't':
                 print ('skel = ', skel_data_temp)
             else:
                 print ('skel = full skeleton')
                 skel_data = skel_data_temp
-            
-            timesk = date_t.now();
-            print ('time to read skeleton =', timesk - startloop)
-    
-            query = ''
-            
-            # read query
-            query_data = udp_read(Read_unity_query)
-            unity_query = udp_process(query_data, Read_unity_query)
-                 
-            print ('UNITY query = ', unity_query)
-    
-            timequ = date_t.now();
-            print ('time to read query =', timequ - timesk)
         
+            unity_query = get_unity_query(Read_unity_query)
+        
+    
         # if query : read unity and skeleton, then save to csv
-        if unity_query=='r':
-            
-            
-            start = time.clock()
-                
-            # process skel data and add headers
-            
-            if  EXAMPLE_DATA:
-                skel_num = in_data[count:count+1].values
-            else:
-                skel = skel_data
-                skel = udp_process(skel, Read_motive_sk)
-                
-            if USE_DF_METHOD:
-            
-                # not converting to df anymore
-                df = pd.DataFrame(skel_num, columns = motive_indices)   
-                    # remove unused columns
-                    
-                df = df[my_cols]
-            else:
-                skel = np.reshape(skel_num, (N_RB_IN_SKEL,-1))
-                
-                # used body parts
-                skel = skel_keep_used_body_parts(skel, used_body_parts)
-            
-            if not acquired_first_skel:
-                         
-                if USE_DF_METHOD:   
-                    # not converting to df anymore
-                    df_first = pd.DataFrame(skel_num, columns = motive_indices) 
-                    
-                    # remove unused columns
-                    
-                    df_first = df_first[my_cols]
-                    
-                    # compute relative angles
-                    
-                    df_first = relativize_df(df_first)
-                else:
-                    
-                    first_skel = np.copy(skel)
-                    
-                    first_skel = relativize_skeleton(first_skel)
-            
-                acquired_first_skel = True
-                
-            
-            # compute relative angles
-            
-            if USE_DF_METHOD:
-                # df style
-                start = time.clock()
-                df = relativize_df(df)
-                end = time.clock()
-                print("time to rel (old) = " + str(end-start))
-            else:
-                # np style
-                start = time.clock()
-                skel = relativize_skeleton(skel)
-                end = time.clock()
-                print("time to rel (new) = " + str(end-start))
-            
-            
-            # unbias angles
-            
-            if USE_DF_METHOD:
-                # df style
-                start = time.clock()
-                # concatenate first and current skel
-                df_combined = pd.concat([df_first,df])
-                
-                # unbias angles
-                start = time.clock()
-                df_combined = remove_bias_df(df_combined, used_body_parts)
-                end = time.clock()
-                print("time to bias (old) = " + str(end-start))
-                
-                df = df_combined[1:2]
-            else:
-                # np style
-                start = time.clock()
-                skel = unbias_skeleton(skel, first_skel)
-                end = time.clock()
-                print("time to bias (new) = " + str(end-start))
-            
-            # compute euler angles
-            
-            if USE_DF_METHOD:
-                # df style
-                start = time.clock()
-                df = compute_ea_df(df, used_body_parts)
-                end = time.clock()
-                print("time to eul (old) = " + str(end-start))
-            else:
-                # np style
-                start = time.clock()
-                skel = compute_ea_skel(skel)
-                end = time.clock()
-                print("time to eul (new) = " + str(end-start))
-            
-            
-            # save input data
-            
-            if USE_DF_METHOD:
-                regress_data_list.append(df)
-            else:
-                regress_data_list.append(skel)
-            
-            if count == 9:
-                print('breaking')
-                
-                break
-            
-            # normalize
-            
-            if USE_DF_METHOD:
-                # df style
-                start = time.clock()
-                
-                for j in list(df):
-                    # do not normalize quaternion components and outputs
-                    if 'pos' in j or 'pitch_' in j or 'roll_' in j or 'yaw_' in j :
-                        [array_norm, norm_param_t] = normalize(df[j], parameters[j])
-                        df[j] = array_norm
-                        
-                end = time.clock()
-                print("time to norm (old) = " + str(end-start))
-            else:
-                # np style
-                start = time.clock()
-                
-                skel = skel - param_av
-                skel = skel / param_std
-                        
-                end = time.clock()
-                print("time to norm (new) = " + str(end-start))
-            
+        if unity_query=='c':
         
-            # regression
-            
-            if USE_DF_METHOD:
-                # df style
-                skel_fake = df[feats]
-                
-                y_score = best_mapping.predict(skel_fake)
-                
-                if not len(y_score_all):
-                    y_score_all = y_score.T
-                else:
-                    y_score_all = np.column_stack((y_score_all,y_score.T))
-            else:
-                skel_f = skel_keep_features(skel, input_data)
-                
-                skel_r = skel_f.reshape(1, -1)
-                
-                y_score = best_mapping.predict(skel_r)
-                
-                if not len(y_score_all):
-                    y_score_all = y_score.T
-                else:
-                    y_score_all = np.column_stack((y_score_all,y_score.T))
-#            
-                    
-            print('')
-            print(count)
-            print('')
-#            
-            end = time.clock()
-            print("time to process control skeleton = " + str(end-start))
-            
-            y_true = out_data[outputs].values
-            
-            
-#            for j in range(0, size(y_true,1)):
-#                if j==0:
-#                    ax = ax1
-#                else:
-#                    ax = ax2
-#                    
-#                ax.scatter(list(range(1,len(y_true)+1)), y_true[:,j], s=1, c='b', marker="s", label='Real')
-#                ax.scatter(list(range(1,size(y_score_all, 1)+1)),y_score_all[j, :], s=1, c='r', marker="o", label='Predicted')
-#    
-#            print(count)
-
-            # send commands to unity (TOBEDONE)
-                
-                
+            [regress_data_list, acquired_first_skel, first_skel, df_first, y_score_all, debug_info] = control_routine(regress_data_list, count, first_skel, df_first, y_score_all, motive_indices, used_body_parts, N_RB_IN_SKEL, acquired_first_skel, EXAMPLE_DATA, in_data, out_data)
+    
         elif unity_query=='q':
-
-            # close unity write socket
-            Read_unity_query.socket.close()
+    
+            close_all_connections(Read_unity_query, Read_unity_control, Read_unity_info, Read_motive_sk)
             
-            # close unity control read socket
-            Read_unity_control.socket.close()
-
-            # close unity info read socket
-            Read_unity_info.socket.close()
-            
-            # close motive read socket
-            Read_motive_sk.socket.close()
-
             break
+        
             
     count = count + 1
     
 end_proc = time.clock()
+
+close_all_connections(Read_unity_query, Read_unity_control, Read_unity_info, Read_motive_sk)
 
 if USE_DF_METHOD:
     meth = 'using pandas'
@@ -653,7 +665,7 @@ print('')
 print('')
 print('')
 print('')
-print('Total processing time ' + meth + ' (' + str(len(in_data)) + ' samples) = ' + "{:.3f}".format(end_proc - start_proc) + ' seconds' )
+print('Total processing time ' + meth + ' (' + str(sett.N_READS) + ' samples) = ' + "{:.3f}".format(end_proc - start_proc) + ' seconds' )
 print('')
 print('')
 print('')
