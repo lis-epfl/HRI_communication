@@ -18,9 +18,10 @@ import time
 
 from builtins import any
 
-sys.path.insert(0, '/Users/matteomacchini/Documents/GitHub/HRI_Mapping')
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'HRI_Mapping'))
 
 from Mapping import *
+import Mapping_settings as settings
 
 # code to speed test
 
