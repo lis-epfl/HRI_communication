@@ -419,7 +419,7 @@ parameters_filename = subject + '_PARAM' + '.txt'
 if mode.name=='control':
     data_folder = settings.data_folder
     interface_folder = data_folder + 'interfaces/'
-    # load interface to file
+    # load interface to fileaaaa
     best_mapping = load_obj(interface_folder + regressor_filename)
     parameters = pd.read_csv(data_folder + parameters_filename)
     
