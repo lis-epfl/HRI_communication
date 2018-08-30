@@ -314,11 +314,11 @@ used_body_parts = [3, 6, 7, 8, 9, 10, 11, 12, 13]
 
 ##################       SETTINGS       ##################
 
-EXAMPLE_DATA = True
+EXAMPLE_DATA = False
 USE_DF_METHOD = True
 
 
-mode = Mode_enum(3)
+mode = 'avatar'
 
 filename = date_t.now().strftime("%Y_%b_%d_%I_%M_%S%p")
 foldername = 'acquired_data'
@@ -358,7 +358,7 @@ UDP_sett.PORT_UNITY_WRITE_SK = 30000
 UDP_sett.PORT_UNITY_WRITE_SK_CLIENT = 26000
 
 
-if mode.name=='avatar':
+if mode=='avatar':
 
     sett.N_READS = 1000
 
@@ -373,7 +373,7 @@ if mode.name=='avatar':
     sett.DUMMY_READ = False
 
 
-if mode.name=='acquisition':
+if mode=='acquisition':
 
     sett.N_READS = math.inf
 
@@ -388,7 +388,7 @@ if mode.name=='acquisition':
     sett.DUMMY_READ = False
 
 
-if mode.name=='control':
+if mode=='control':
 
     sett.N_READS = math.inf
 
@@ -416,7 +416,7 @@ parameters_filename = subject + '_PARAM' + '.txt'
 regressor_filename = subject + '_best_mapping'
 parameters_filename = subject + '_PARAM' + '.txt'
 
-if mode.name=='control':
+if mode=='control':
     data_folder = settings.data_folder
     interface_folder = data_folder + 'interfaces/'
     # load interface to fileaaaa
@@ -510,6 +510,7 @@ elif input_data == 'quaternions':
     
 
 #if not EXAMPLE_DATA:
+    
 # create unity read query / write skeleton socket
 Read_unity_query = setup(UDP_sett.IP_UNITY, UDP_sett.PORT_UNITY_QUERY, 'UNITY_QUERY', timeout = 0.001)
 Write_unity_sk = Read_unity_query
@@ -567,18 +568,18 @@ if EXAMPLE_DATA:
 start_proc = time.clock()    
 
 while count<sett.N_READS:
-    if mode.name=='avatar':
+    if mode=='avatar':
 
         while count<sett.N_READS:
             # create motive read socket
             # update skeleton
             # close motive read socket
-            (skel) = read_sk_motive(UDP_sett)
+            (skel) = consume_motive_skeleton(Read_motive_sk)
 
             query = ''
 
             # check if unity query
-            unity_query = read(Read_unity_query)
+            unity_query = get_unity_query(Read_unity_query)
 
             # close unity read socket
             # Write_unity_sk.socket.close()
