@@ -40,7 +40,7 @@ def get_unity_query(Read_unity_query):
     
     return unity_query
 
-def acquisition_routine(skel, unity_num, Read_unity_control, Read_unity_info):
+def acquisition_routine(skel, skel_data, unity_num, Read_unity_control, Read_unity_info):
         
     print('collecting data')
 
@@ -318,7 +318,7 @@ EXAMPLE_DATA = False
 USE_DF_METHOD = True
 
 
-mode = 'avatar'
+mode = 'acquisition'
 
 filename = date_t.now().strftime("%Y_%b_%d_%I_%M_%S%p")
 foldername = 'acquired_data'
@@ -361,45 +361,30 @@ UDP_sett.PORT_UNITY_WRITE_SK_CLIENT = 26000
 if mode=='avatar':
 
     sett.N_READS = 1000
-
     sett.READ_MOTIVE_SK = 1
-
     sett.READ_QUERY_FROM_UNITY = 1
-
     sett.WRITE_SK_TO_UNITY = 1
-
     sett.OPEN_CLOSE_CONTINUOUS = 1
-
     sett.DUMMY_READ = False
 
 
 if mode=='acquisition':
 
     sett.N_READS = math.inf
-
     sett.READ_MOTIVE_SK = 1
-
     sett.READ_QUERY_FROM_UNITY = 1
-
     sett.WRITE_SK_TO_UNITY = 1
-
     sett.OPEN_CLOSE_CONTINUOUS = 1
-
     sett.DUMMY_READ = False
 
 
 if mode=='control':
 
     sett.N_READS = math.inf
-
     sett.READ_MOTIVE_SK = 1
-
     sett.READ_QUERY_FROM_UNITY = 1
-
     sett.WRITE_SK_TO_UNITY = 1
-
     sett.OPEN_CLOSE_CONTINUOUS = 1
-
     sett.DUMMY_READ = False
 
 
@@ -599,7 +584,7 @@ while count<sett.N_READS:
                 
                 break
 
-    elif mode.name=='acquisition':
+    elif mode =='acquisition':
         
         skel_data_temp = consume_motive_skeleton(Read_motive_sk)
         
@@ -611,11 +596,14 @@ while count<sett.N_READS:
     
         unity_query = get_unity_query(Read_unity_query)
         
+        unity_query = 'a'
     
         # if query : read unity and skeleton, then save to csv
         if unity_query=='a':
         
-            [skel, unity_num] = acquisition_routine(skel, unity_num, Read_motive_sk, Read_unity_query, Read_unity_control, Read_unity_info)
+            skel_data = 1
+            
+            [skel, unity_num] = acquisition_routine(skel, skel_data, unity_num, Read_unity_control, Read_unity_info)
         
         elif unity_query=='q':
     
@@ -623,7 +611,7 @@ while count<sett.N_READS:
             
             break
         
-    if mode.name=='control':
+    if mode == 'control':
         
         if not EXAMPLE_DATA:
         
