@@ -97,8 +97,9 @@ class HRI_communication_settings():
     ####################################################
     
     
-    EXAMPLE_DATA = True
-    USE_DF_METHOD = True
+    dummy_read = False
+    example_data = True
+    control_preproc_pandas = True
     
     n_rigid_bodies_in_skeleton = 21
     n_data_per_rigid_body = 8
@@ -114,42 +115,6 @@ class HRI_communication_settings():
     
     
     n_readings = 100
-    
-    
-    motive_indices = np.array([])
-    
-    motive_indices_base = np.char.array([ 'ID', 'pos_x', 'pos_y', 'pos_z', 'quat_x', 'quat_y', 'quat_z', 'quat_w'])
-    
-    regression_indices = np.array([])
-    
-    regression_indices_base = np.char.array([ 'ID', 'pos_x', 'pos_y', 'pos_z', 'quat_x', 'quat_y', 'quat_z', 'quat_w', 'roll', 'pitch', 'yaw'])
-    
-    for i in range(n_rigid_bodies_in_skeleton):
-    
-        n = np.char.array([('_' + str(i+1))])
-    
-        if i==0:
-            motive_indices = motive_indices_base + (n)
-            if i+1 in used_body_parts:
-                regression_indices = regression_indices_base + (n)
-        else:
-            motive_indices = np.r_[motive_indices, motive_indices_base + (n)]
-            if i+1 in used_body_parts:
-                regression_indices = np.r_[regression_indices, regression_indices_base + (n)]
-    
-    
-    unity_indices_calib = np.char.array([ 'input1', 'input2', 'input3', 'input4', 'roll', 'pitch', 'yaw', 'roll_rate', 'pitch_rate', 'yaw_rate', 'vel_x', 'vel_y', 'vel_z', 'vel_semiloc_x', 'vel_semiloc_y', 'vel_semiloc_z', 'corr_roll', 'corr_pitch', 'pos_x', 'pos_y', 'pos_z', 'rot_x', 'rot_y', 'rot_z', 'rot_w', 'timestamp' ])
-    unity_indices_info = np.char.array([ 'calib_axis', 'calib_phase', 'is_input_not_zero', 'instance', 'loop counter' ])
-    
-    motive_data = np.array(motive_indices)
-    unity_data_calib = np.array(unity_indices_calib)
-    unity_data_info = np.array(unity_indices_info)
-    unity_data = np.r_[unity_indices_calib, unity_indices_info]
-    
-    calib_data = np.r_[motive_indices, unity_data]
-    
-    data = calib_data
-    data = data.reshape(1, data.size)
     
 #####################################################
     
@@ -167,6 +132,8 @@ class HRI_communication_sockets():
     unity_info = {'IP' : "127.0.0.1", 'PORT' : 30013}  # Local UNITY client, arbitrary non-privileged port
     unity_write_sk = {'IP' : "127.0.0.1", 'PORT' : 30000}  # Local UNITY client, arbitrary non-privileged port
     unity_write_sk_client = {'IP' : "127.0.0.1", 'PORT' : 26000}  # Local UNITY client, arbitrary non-privileged port
+    
+    unity_sk_client = {'IP' : "127.0.0.1", 'PORT' : 26000}  # Local UNITY client, arbitrary non-privileged port
     
     # OPEN
     

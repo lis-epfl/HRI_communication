@@ -13,14 +13,20 @@ sys.path.insert(0,parentdir)
 
 import HRI_communication as hri
 
+# close eventual previous instance sockets
+
+if 'comm' in locals():
+    comm.close_sockets()
 
 comm = hri.HRI_communication()
 
 mapp = comm.import_mapping()
 
 
+comm.close_sockets()
+
 comm.setup_sockets()
 
 comm.settings.mode = 'avatar'
 
-comm.run()
+comm.run('acquisition')
