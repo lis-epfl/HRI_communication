@@ -13,17 +13,31 @@ Created on Thu Aug 30 15:43:19 2018
 import datetime
 
 #import matplotlib.pyplot as plt
-#import numpy as np
 #import os
 #import pandas as pd
 #from sklearn import metrics
 #import time
+import numpy as np
+import pandas as pd
 import socket as soc
 from socket import timeout
 import sys
 #
 from HRI_communication_add import *
 #import quaternion_operations as quat_op
+
+    
+        
+import os,inspect
+currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
+parentdir = os.path.dirname(currentdir)
+
+if os.path.normpath(os.path.join(parentdir, 'HRI_mapping/')) not in sys.path:
+    sys.path.insert(0, os.path.normpath(os.path.join(parentdir, 'HRI_mapping/')))
+
+import HRI
+import HRI_mapping
+import motive_skeleton
 
 
 
@@ -37,71 +51,89 @@ class Socket_struct:
 class HRI_communication():
     
     
-    param = HRI_communication_param()
-    settings = HRI_communication_settings()
-    user = HRI_communication_user()
-    sockets = HRI_communication_sockets()
+    ### CLASS FUNCTIONS ###
     
-    
-    SUBJECTS = {'MatteoM' : 'pilot1', 
-                'StefanoM' : 'pilot2', 
-                'DavideZ' : 'pilot3'}
-    
-    subject = SUBJECTS['DavideZ']
-    
-    
-    count = 0
-    
-    query = ''
-    
-    # define data structure and headers
-    
-    data_num = np.array([])
-    
-    skel_num = np.array([])
-    
-    unity_num = np.array([])
-    
-    skel = []
+    def __init__(self):
+            
+        self.param = HRI_communication_param()
+        self.settings = HRI_communication_settings()
+        self.user = HRI_communication_user()
+        self.sockets = HRI_communication_sockets()
+        
     
     
     
+        self.motive_header = np.array([])
+        
+        self.motive_header_base = np.char.array([ 'ID', 'pos_x', 'pos_y', 'pos_z', 'quat_x', 'quat_y', 'quat_z', 'quat_w'])
+        
+        self.regression_header = np.array([])
+        
+        self.regression_header_base = np.char.array([ 'ID', 'pos_x', 'pos_y', 'pos_z', 'quat_x', 'quat_y', 'quat_z', 'quat_w', 'roll', 'pitch', 'yaw'])
+        
+        for i in range(self.settings.n_rigid_bodies_in_skeleton):
+        
+            n = np.char.array([('_' + str(i+1))])
+        
+            if i==0:
+                self.motive_header = self.motive_header_base + (n)
+                if i+1 in self.settings.used_body_parts:
+                    self.regression_header = self.regression_header_base + (n)
+            else:
+                self.motive_header = np.r_[self.motive_header, self.motive_header_base + (n)]
+                if i+1 in self.settings.used_body_parts:
+                    self.regression_header = np.r_[self.regression_header, self.regression_header_base + (n)]
+        
+        
+        self.unity_header_calib = np.char.array([ 'input1', 'input2', 'input3', 'input4', 'roll', 'pitch', 'yaw', 'roll_rate', 'pitch_rate', 'yaw_rate', 'vel_x', 'vel_y', 'vel_z', 'vel_semiloc_x', 'vel_semiloc_y', 'vel_semiloc_z', 'corr_roll', 'corr_pitch', 'pos_x', 'pos_y', 'pos_z', 'rot_x', 'rot_y', 'rot_z', 'rot_w', 'timestamp' ])
+        self.unity_header_info = np.char.array([ 'calib_axis', 'calib_phase', 'is_input_not_zero', 'instance', 'loop counter' ])
+        
+        self.motive_header = np.array(self.motive_header)
+        self.unity_header_calib = np.array(self.unity_header_calib)
+        self.unity_header_info = np.array(self.unity_header_info)
+        self.unity_header = np.r_[self.unity_header_calib, self.unity_header_info]
+        
+        self.calib_header = np.r_[self.motive_header, self.unity_header]
+        
+        self.data = self.calib_header
+        self.data = self.data.reshape(1, self.data.size)
     
-    motive_header = np.array([])
-    
-    motive_header_base = np.char.array([ 'ID', 'pos_x', 'pos_y', 'pos_z', 'quat_x', 'quat_y', 'quat_z', 'quat_w'])
-    
-    regression_header = np.array([])
-    
-    regression_header_base = np.char.array([ 'ID', 'pos_x', 'pos_y', 'pos_z', 'quat_x', 'quat_y', 'quat_z', 'quat_w', 'roll', 'pitch', 'yaw'])
-    
-    for i in range(settings.n_rigid_bodies_in_skeleton):
-    
-        n = np.char.array([('_' + str(i+1))])
-    
-        if i==0:
-            motive_header = motive_header_base + (n)
-            if i+1 in settings.used_body_parts:
-                regression_header = regression_header_base + (n)
-        else:
-            motive_header = np.r_[motive_header, motive_header_base + (n)]
-            if i+1 in settings.used_body_parts:
-                regression_header = np.r_[regression_header, regression_header_base + (n)]
     
     
-    unity_header_calib = np.char.array([ 'input1', 'input2', 'input3', 'input4', 'roll', 'pitch', 'yaw', 'roll_rate', 'pitch_rate', 'yaw_rate', 'vel_x', 'vel_y', 'vel_z', 'vel_semiloc_x', 'vel_semiloc_y', 'vel_semiloc_z', 'corr_roll', 'corr_pitch', 'pos_x', 'pos_y', 'pos_z', 'rot_x', 'rot_y', 'rot_z', 'rot_w', 'timestamp' ])
-    unity_header_info = np.char.array([ 'calib_axis', 'calib_phase', 'is_input_not_zero', 'instance', 'loop counter' ])
-    
-    motive_header = np.array(motive_header)
-    unity_header_calib = np.array(unity_header_calib)
-    unity_header_info = np.array(unity_header_info)
-    unity_header = np.r_[unity_header_calib, unity_header_info]
-    
-    calib_header = np.r_[motive_header, unity_header]
-    
-    data = calib_header
-    data = data.reshape(1, data.size)
-    
+        self.SUBJECTS = {'MatteoM' : 'pilot1', 
+                    'StefanoM' : 'pilot2', 
+                    'DavideZ' : 'pilot3'}
+        
+        self.subject = self.SUBJECTS['DavideZ']
+        
+        
+        self.count = 0
+        
+        self.query = ''
+        
+        # define data structure and headers
+        
+        self.data_num = np.array([])
+        
+        self.skel_num = np.array([])
+        
+        self.unity_num = np.array([])
+        
+        self.skel = []
+        
+        self.regress_data_list = []
+        
+        self.acquired_first_skel = False
+        
+        self.feats = None
+        self.rms_list = None
+        
+        self._debug_control = []
+        self._debug_control_on = False
+        
+        self.y_true_all = np.empty((1000000, 2))
+
+        self.y_score_all = np.empty((1000000, 2))
     
     ### PRIVATE FUNCTIONS ###
     
@@ -322,7 +354,7 @@ class HRI_communication():
         query_data = self._udp_read(self.sockets.read_unity_query)
         unity_query = self._udp_process(query_data, self.sockets.read_unity_query)
              
-        print ('UNITY query = ', unity_query)
+#        print ('UNITY query = ', unity_query)
         
         return unity_query
         
@@ -388,8 +420,8 @@ class HRI_communication():
         
             unity_query = self._get_unity_query()
             
-            unity_query = 'a'
-            
+            if self.settings.simulate_query:
+                unity_query = 'a'
         
             # if query : read unity and skeleton, then save to csv
             if unity_query=='a':
@@ -450,13 +482,22 @@ class HRI_communication():
     
     def _run_control(self):
         
+        if self.settings.example_data:
+            self.y_true_all = np.empty((len(self.dummy_data), 2))
+            self.y_score_all = np.empty((len(self.dummy_data), 2))
+            if self.settings.n_readings == np.inf:
+                self.settings.n_readings = len(self.dummy_data-1)
+            
         count = 0
             
         while count<self.settings.n_readings:
-            
-            count += 1
         
-            if not self.example_data:
+            if self.settings.example_data:
+                
+                # import dummy data
+                a = 0
+                
+            else:
             
                 skel_data_temp = self._consume_motive_skeleton()
                 
@@ -466,25 +507,29 @@ class HRI_communication():
                     print ('skel = full skeleton')
                     skel_data = skel_data_temp
             
-                unity_query = self._get_unity_query()
+            unity_query = self._get_unity_query()
             
-        
+            if self.settings.simulate_query:
+                unity_query = 'c'
+                
             # if query : read unity and skeleton, then save to csv
             if unity_query=='c':
-            
-                [regress_data_list, acquired_first_skel, first_skel, df_first, y_score_all, debug_info] = self._control_routine(regress_data_list, count, first_skel, df_first, y_score_all, motive_indices, used_body_parts, N_RB_IN_SKEL, acquired_first_skel, EXAMPLE_DATA, in_data, out_data)
-        
-            elif unity_query=='q':
-        
-                self.close_sockets()
                 
+                self._control_routine(count)
+                
+            elif unity_query=='q':
+                
+                self.close_sockets()
+                    
                 break
             
-
+            count += 1
+            
+                
     #########################
     
     
-    def _control_routine(self, regress_data_list, count, first_skel, df_first, y_score_all, motive_indices, used_body_parts, N_RB_IN_SKEL, acquired_first_skel, EXAMPLE_DATA = False, in_data = 0, out_data = 0):
+    def _control_routine(self, count = 0):
         
         # if query : read unity and skeleton, then save to csv
         
@@ -492,218 +537,250 @@ class HRI_communication():
             
         # process skel data and add headers
         
-        if  self.example_data:
-            skel_num = in_data[count:count+1].values
+        if  self.settings.example_data:
+            skel_num = self.dummy_data[count:count+1]
         else:
             skel = skel_data
             skel = self._udp_process(skel)
             
-        if self.control_preproc_pandas:
-        
-            # not converting to df anymore
-            df = pd.DataFrame(skel_num, columns = self.motive_header)   
-                # remove unused columns
-                
-            df = df[my_cols]
-        else:
-            skel = np.reshape(skel_num, (self.n_rigid_bodies_in_skel,-1))
+        if self.settings.control_preproc_pandas:
             
-            # used body parts
-            skel = nskel_keep_used_body_parts(skel, used_body_parts)
+            print('processing (pandas method)')
         
-        if not acquired_first_skel:
-                     
-            if USE_DF_METHOD:   
-                # not converting to df anymore
-                df_first = pd.DataFrame(skel_num, columns = motive_indices) 
+            mapp = HRI_mapping.HRI_mapping()
+            
+            # create df
+            df = pd.DataFrame(skel_num, columns = self.regression_header)   
+            
+            # first skel
+            if not self.acquired_first_skel:
+                
+                # create df
+                self.first_skel = pd.DataFrame(skel_num, columns = self.regression_header) 
                 
                 # remove unused columns
-                
-                df_first = df_first[my_cols]
+                self.first_skel = self.first_skel[self.regression_header]
                 
                 # compute relative angles
+                self.first_skel = mapp._relativize_df(self.first_skel)
                 
-                df_first = relativize_df(df_first)
-            else:
-                
-                first_skel = np.copy(skel)
-                
-                first_skel = relativize_skeleton(first_skel)
-        
-            acquired_first_skel = True
+                self.acquired_first_skel = True
             
-        
-        # compute relative angles
-        
-        if USE_DF_METHOD:
-            # df style
-    #        start = time.clock()
-            df = relativize_df(df)
-    #        end = time.clock()
-    #        print("time to rel (old) = " + str(end-start))
-        else:
-            # np style
-    #        start = time.clock()
-            skel = relativize_skeleton(skel)
-    #        end = time.clock()
-    #        print("time to rel (new) = " + str(end-start))
-        
-        
-        # unbias angles
-        
-        if USE_DF_METHOD:
-            # df style
-            start = time.clock()
+            if self._debug_control_on:
+                skel_first = self.first_skel[self.feats]
+            
+            # remove unused columns
+            df = df[self.regression_header]
+                
+            if self._debug_control_on:
+                skel_base = df[self.feats]
+            
+            # compute relative angles
+            df = mapp._relativize_df(df)
+                
+            if self._debug_control_on:
+                skel_rel = df[self.feats]
+            
             # concatenate first and current skel
-            df_combined = pd.concat([df_first,df])
+            df_combined = pd.concat([self.first_skel,df])
             
             # unbias angles
-    #        start = time.clock()
-            df_combined = remove_bias_df(df_combined, used_body_parts)
-    #        end = time.clock()
-    #        print("time to bias (old) = " + str(end-start))
-            
+            df_combined = mapp._remove_bias_df(df_combined)
             df = df_combined[1:2]
-        else:
-            # np style
-    #        start = time.clock()
-            skel = unbias_skeleton(skel, first_skel)
-    #        end = time.clock()
-    #        print("time to bias (new) = " + str(end-start))
-        
-        # compute euler angles
-        
-        if USE_DF_METHOD:
-            # df style
-    #        start = time.clock()
-            df = compute_ea_df(df, used_body_parts)
-    #        end = time.clock()
-    #        print("time to eul (old) = " + str(end-start))
-        else:
-            # np style
-    #        start = time.clock()
-            skel = compute_ea_skel(skel)
-    #        end = time.clock()
-    #        print("time to eul (new) = " + str(end-start))
-        
-        
-        # save input data
-        
-        if USE_DF_METHOD:
-            regress_data_list.append(df)
-        else:
-            regress_data_list.append(skel)
-        
-    #            if count == 9:
-    #                print('breaking')
+                
+            if self._debug_control_on:
+                skel_unb = df[self.feats]
             
-    #                break
-        
-        # normalize
-        
-        if USE_DF_METHOD:
-            # df style
-    #        start = time.clock()
+            # compute euler angles
+            df = mapp._compute_ea_df(df)
             
+            # save input data
+            self.regress_data_list.append(df)
+            
+            
+            if self._debug_control_on:
+                skel_eul = df[self.feats]
+            
+            # normalize
             for j in list(df):
                 # do not normalize quaternion components and outputs
                 if 'pos' in j or 'pitch_' in j or 'roll_' in j or 'yaw_' in j :
-                    [array_norm, norm_param_t] = normalize(df[j], parameters[j])
+                    [array_norm, norm_param_t] = mapp._normalize(df[j], self.param.normalization_values[j])
                     df[j] = array_norm
                     
-    #        end = time.clock()
-    #        print("time to norm (old) = " + str(end-start))
-        else:
-            # np style
-    #        start = time.clock()
+                
+            # regression
+            skel_fake = df[self.feats]
             
-            skel = skel - param_av
-            skel = skel / param_std
-                    
-    #        end = time.clock()
-    #        print("time to norm (new) = " + str(end-start))
+            y_score = self.best_mapping.predict(skel_fake)
+            
+            
+            if self._debug_control_on:
+                self._debug_control.append({'skel_num' : skel_num,
+                                        'skel_base' : skel_base,
+                                        'skel_first' : skel_first,
+                                        'skel_rel' : skel_rel,
+                                        'skel_unb' : skel_unb,
+                                        'skel_eul' : skel_eul,
+                                        'skel' : skel_fake,
+                                        'score' : y_score})
+            
+            if self.rms_list == None:
+                self.rms_list = []
+                
+            self.rms_list = self.rms_list.append(y_score.T)
+            
+        else:
+            
+#            print('processing (numpy method)')
+            
+            skel = motive_skeleton.skeleton(np.reshape(skel_num[self.motive_header].values, (self.settings.n_rigid_bodies_in_skeleton,-1)))
+            
+            skel_base = skel.values
+            
+            ### USING MOTIVE_SKELETON CLASS ###
+            
+            # used body parts
+            skel.keep_used_body_parts()
         
+            skel_bodyparts = np.copy(skel.values)
+        
+            # compute relative angles
+            skel.relativize_skeleton()
+        
+            skel_rel= np.copy(skel.values)
+        
+            
+            # first skel
+            if not self.acquired_first_skel:
+                
+                self.first_skel = motive_skeleton.skeleton(np.copy(skel.values))
+        
+                self.acquired_first_skel = True
+        
+            skel_first = np.copy(self.first_skel.values)
+                
+                
+            # unbias angles
+            skel.unbias_skeleton(self.first_skel)
+        
+            skel_unb = np.copy(skel.values)
+            
+            # compute euler angles
+            skel.compute_ea()
+        
+            # save input data
+            self.regress_data_list.append(skel)
+            
+            skel_eul = np.copy(skel.values)
+        
+            # normalize
+            skel.normalize(self.param.norm_av, self.param.norm_std)
+            
+            skel_norm = np.copy(skel.values)
+            
+            # regression
+            skel.keep_features(self.settings.features_used)
+            
+            skel_reg = np.copy(skel.values.reshape(1, -1))
+            
+            y_score = self.best_mapping.predict(skel_reg)
+            
+            
+            
+            self._debug_control.append({'skel_num' : skel_num,
+                                        'skel_bodyparts' : skel_bodyparts,
+                                        'skel_base' : skel_base,
+                                        'skel_first' : skel_first,
+                                        'skel_rel' : skel_rel,
+                                        'skel_unb' : skel_unb,
+                                        'skel_eul' : skel_eul,
+                                        'skel_norm' : skel_norm ,
+                                        'skel' : skel_reg,
+                                        'score' : y_score})
     
-    #     regression
-        
-        if USE_DF_METHOD:
-            # df style
-            skel_fake = df[feats]
             
-            y_score = best_mapping.predict(skel_fake)
-            
-            if not len(y_score_all):
-                y_score_all = y_score.T
-            else:
-                y_score_all = np.column_stack((y_score_all,y_score.T))
-        else:
-            
-            skel_f = skel_keep_features(skel, input_data)
-            
-            skel_r = skel_f.reshape(1, -1)
-            
-            y_score = best_mapping.predict(skel_r)
-            
-            if not len(y_score_all):
-                y_score_all = y_score.T
-            else:
-                y_score_all = np.column_stack((y_score_all,y_score.T))
+    
+            if self.rms_list == None:
+                self.rms_list = []
+                
+            self.rms_list = self.rms_list.append(y_score.T)
                 
                 
         print('')
         print(count)
         print('')
-    #            
-        end = time.clock()
-        print("time to process control skeleton = " + str(end-start))
         
-        y_true = out_data[outputs].values
+        #            
         
-        res = {"reg":best_mapping,
-                    "reg_type":str(best_mapping),
-                    "y_true":y_true,
-                    "y_score":y_score
+        y_true = self.dummy_data[self.settings.outputs][count:count+1].values
+        
+        self.y_true_all[count] = y_true
+        self.y_score_all[count] = y_score
+        
+        self.res_all = {"reg":self.best_mapping,
+                    "reg_type":str(self.best_mapping),
+                    "y_true":self.y_true_all,
+                    "y_score":self.y_score_all
                     }
         
-        plot_fit_performance(res)
+        # send commands to unity
         
         
-        print(count)
+    #########################
     
-        # send commands to unity (TOBEDONE)
+    
+    def _import_dummy(self):
         
-        if USE_DF_METHOD:
-            debug_info = {'df' : df,
-                          'skel' : skel_fake,
-                          'y_score' : y_score,
-                          }
-        else:
-            debug_info = {'skel' : skel,
-                          'y_score' : y_score,
-                          }
+        self.mapp = self.import_mapping()
+        
+        self.mapp.import_data(which_user = 'test', clean = False)
+        self.dummy_data = HRI.merge_data_df(self.mapp.motion_data_unprocessed['test'])[self.mapp.settings.init_values_to_remove:]
+        self.param.normalization_values = self.mapp.param.normalization_values
+        
+        self.param.normalization_values = self.param.normalization_values.iloc[:,:-2]
+        self.param.normalization_values = self.param.normalization_values[self.regression_header]
+        
+        parameters_val = self.param.normalization_values.values
+        
+        self.param.norm_av = parameters_val[0,:].reshape(len(self.settings.used_body_parts),-1)
+        self.param.norm_std = parameters_val[1,:].reshape(len(self.settings.used_body_parts),-1)
+    
+        self.best_mapping = self.mapp.test_results[self.mapp.best_idx]['reg']
+        
+        
+    #########################
+    
+    
+    ### PUBLIC  FUNCTIONS ###
+    
+    
+    #########################
+    
+    
+    def select_features(self):
+        
+        in_data = self.settings.features_used
                 
-            
-            
+        if in_data == 'full':
+            feats = [col for col in list(self.regression_header) if '_' in col]
+        elif in_data == 'angles':
+            feats = [col for col in list(self.regression_header) if 'quat' in col or 'roll_' in col or 'pitch_' in col or 'yaw_' in col]
+        elif in_data == 'euler':
+            feats = [col for col in list(self.regression_header) if 'roll_' in col or 'pitch_' in col or 'yaw_' in col]
+        elif in_data == 'quaternions':
+            feats = [col for col in list(self.regression_header) if 'quat' in col]
     
-        return [regress_data_list, acquired_first_skel, first_skel, df_first, y_score_all, debug_info]
+        self.feats = feats
     
     
-    ### PUBLIC FUNCTIONS ###
+    #########################
     
     
     def import_mapping(self):
-    
-        
-        import os,sys,inspect
-        currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
-        parentdir = os.path.dirname(currentdir)
-        sys.path.insert(0, os.path.normpath(os.path.join(parentdir, 'HRI_Mapping/')))
-    
-        import HRI_mapping
         
         mapp = HRI_mapping.HRI_mapping()
-        
-        mapp.load_last_for_this_subject()
+        mapp = HRI_mapping.load_last_for_this_subject(mapp)
         
         return mapp
         
@@ -774,6 +851,20 @@ class HRI_communication():
     
     def run(self, mode = None):
         
+        if self.settings.simulate_query:
+            self._import_dummy()
+            
+        self.acquired_first_skel = False
+        self.regress_data_list = []
+        self._debug_control = []
+        
+        self.select_features()
+        
+        if self.settings.n_readings == None:
+            self.settings.n_readings = np.inf
+        
+        ###
+        
         if mode == None:
             mode = self.settings.mode
         
@@ -784,6 +875,10 @@ class HRI_communication():
         if mode == 'acquisition':
             
             self._run_acquisition()
+        
+        if mode == 'control':
+            
+            self._run_control()
         
         
     #########################
@@ -816,8 +911,25 @@ class HRI_communication():
             plt.axis()
             plt.scatter(count, arr[8*2+1], c = 1)
             plt.pause(0.0001)
+        
+        
+    #########################
+        
     
-
+    def write_controls_to_unity(self, controls):
+    
+        arr = controls.tolist()
+    
+        strs = ""
+        
+        # pars into floats
+    
+        for i in range(0, len(arr) // 4):
+                strs += "f"
+                
+        message = struct.pack('%sf' % len(arr), *arr)
+    
+        self._udp_write(message)
     
     
     
