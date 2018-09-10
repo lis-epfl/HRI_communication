@@ -43,6 +43,7 @@ class HRI_communication_user():
     # should come from mapping structure #
     ######################################
     
+    
     settings = {'train' : {'subject' : ['pilot3_'],
                           'maneuvre' : ['pitch_straight'],
                           'instance' : ['inst_1', 'inst_2']
@@ -52,7 +53,7 @@ class HRI_communication_user():
                          'instance' : ['inst_3']
                          }
                  }
-    
+                
     
 #####################################################
     
@@ -114,7 +115,8 @@ class HRI_communication_settings():
     foldername = '/Users/matteomacchini/Google Drive/Matteo/EPFL/LIS/PhD/Natural_Mapping/DATA/acquired_data/'
     
     
-    n_readings = 100
+    n_readings = None
+    simulate_query = False
     
 #####################################################
     
