@@ -10,6 +10,7 @@ Created on Fri Aug 31 17:46:13 2018
 #####################################################
 
 import numpy as np
+import quaternion_operations as quat_op
 
 from HRI_communication_add import *
 
@@ -17,12 +18,18 @@ from HRI_communication_add import *
 
 class skeleton():
     
-    values = None
     
-    settings = HRI_communication_settings()
+    ### INIT FUNCTION ###
     
-    settings.quat_loc = 4
-    settings.quat_len = 4
+
+    def __init__(self, values):
+        
+        self.values = values
+    
+        self.settings = HRI_communication_settings()
+    
+        self.settings.quat_loc = 4
+        self.settings.quat_len = 4
     
     
     ### PRIVATE FUNCTIONS ###
@@ -34,8 +41,10 @@ class skeleton():
 
 
     def keep_used_body_parts(self):
+        
+        a = self._search_bone_per_index(self.settings.used_body_parts)
                 
-        self.values = self.values[self._search_bone_per_index(),:]
+        self.values = self.values[a,:]
     
     
     def keep_features(self, feats):
@@ -52,7 +61,7 @@ class skeleton():
         elif feats == 'quaternions':
             mask = np.array([4, 5, 6, 7])
                 
-        return self.values[:,mask]
+        self.values = self.values[:,mask]
         
     def relativize_skeleton(self):
         
@@ -66,32 +75,34 @@ class skeleton():
         self._relativize_bone(10, 3)
         
     
-    def _values_to_quaternion(quat_val):
+    def _values_to_quaternion(self, quat_val):
         
         quat = np.quaternion(quat_val[3], quat_val[0], quat_val[1], quat_val[2])
         
         return quat
     
-    def _quaternion_to_values(quat):
+    def _quaternion_to_values(self, quat):
         
         quat_val = np.array([quat.x, quat.y, quat.z, quat.w])
         
         return quat_val
         
-    def unbias_skeleton(self, first_skel, quat_loc = 4):
+    def unbias_skeleton(self, first_skel):
         
-        for i in range(size(self.values, 0)):
-            bias_quat = self.values[i][self._quat_idx()]
-            ref_quat = first_skel.values[i][self._quat_idx()]
+        for i in range(np.size(self.values, 0)):
+            bias_quat = self.values[i,:][self._quat_idx()]
+            ref_quat = first_skel.values[i,:][self._quat_idx()]
             
-            #unbiased
+#            print ('biased = ',  bias_quat, ', ref = ', ref_quat)
+            
+            #unbias
             self.values[i][self._quat_idx()] = self._quaternion_to_values(self._values_to_quaternion(bias_quat)/self._values_to_quaternion(ref_quat))
         
-    def _search_bone_per_index(self):
+    def _search_bone_per_index(self, idx):
         
         arr = self.values[:,0]
         
-        i = np.where(self.settings.used_body_parts==arr[:,None])[0]
+        i = np.where(idx==arr[:,None])[0]
     
         return i
     
@@ -103,16 +114,16 @@ class skeleton():
             
             quat_val = a[self._quat_idx()]
             
-            eul = Q2EA((quat_val[3], quat_val[0], quat_val[1], quat_val[2]), EulerOrder="zyx", ignoreAllChk=True)[0]
+            eul = quat_op.Q2EA((quat_val[3], quat_val[0], quat_val[1], quat_val[2]), EulerOrder="zyx", ignoreAllChk=True)[0]
             
-            print(eul)
+#            print(eul)
             
             # right order [xzy] : due to Motive settings
             return np.array([eul[2], eul[0], eul[1]])
     
     
         # pre-allocation
-        eul_skel = np.zeros([np.size(self.values, 0), size(self.values, 1) + 3])
+        eul_skel = np.zeros([np.size(self.values, 0), np.size(self.values, 1) + 3])
         
         eul_skel[:, :np.size(self.values, 1)] = self.values
         
@@ -135,8 +146,8 @@ class skeleton():
         abs_row = self.values[abs_idx].reshape(-1)
         
         # extract quaternions
-        ref_quat = ref_row[quat_loc : self.settings.squat_loc + self.settings.quat_len]
-        abs_quat = abs_row[quat_loc : self.settings.quat_loc + self.settings.quat_len]
+        ref_quat = ref_row[self._quat_idx()]
+        abs_quat = abs_row[self._quat_idx()]
         
         ref_quat_q = self._values_to_quaternion(ref_quat)
         abs_quat_q = self._values_to_quaternion(abs_quat)
@@ -145,6 +156,12 @@ class skeleton():
         rel_quat_q = abs_quat_q/ref_quat_q
         
         # stick back in array
-        abs_row[self.settings.quat_loc : self.settings.quat_loc + self.settings.quat_len] = self._quaternion_to_values(rel_quat_q)
+        abs_row[self._quat_idx()] = self._quaternion_to_values(rel_quat_q)
         
         self.values[abs_idx] = abs_row
+    
+    
+    def normalize(self, av, std):
+        
+        self.values = self.values - av
+        self.values = self.values / std
