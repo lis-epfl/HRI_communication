@@ -40,7 +40,7 @@ def get_unity_query(Read_unity_query):
     
     return unity_query
 
-def acquisition_routine(skel, unity_num, Read_unity_control, Read_unity_info):
+def acquisition_routine(skel, skel_data, unity_num, Read_unity_control, Read_unity_info):
         
     print('collecting data')
 
@@ -314,11 +314,11 @@ used_body_parts = [3, 6, 7, 8, 9, 10, 11, 12, 13]
 
 ##################       SETTINGS       ##################
 
-EXAMPLE_DATA = True
+EXAMPLE_DATA = False
 USE_DF_METHOD = True
 
 
-mode = Mode_enum(3)
+mode = 'acquisition'
 
 filename = date_t.now().strftime("%Y_%b_%d_%I_%M_%S%p")
 foldername = 'acquired_data'
@@ -358,48 +358,33 @@ UDP_sett.PORT_UNITY_WRITE_SK = 30000
 UDP_sett.PORT_UNITY_WRITE_SK_CLIENT = 26000
 
 
-if mode.name=='avatar':
+if mode=='avatar':
 
     sett.N_READS = 1000
-
     sett.READ_MOTIVE_SK = 1
-
     sett.READ_QUERY_FROM_UNITY = 1
-
     sett.WRITE_SK_TO_UNITY = 1
-
     sett.OPEN_CLOSE_CONTINUOUS = 1
-
     sett.DUMMY_READ = False
 
 
-if mode.name=='acquisition':
+if mode=='acquisition':
 
     sett.N_READS = math.inf
-
     sett.READ_MOTIVE_SK = 1
-
     sett.READ_QUERY_FROM_UNITY = 1
-
     sett.WRITE_SK_TO_UNITY = 1
-
     sett.OPEN_CLOSE_CONTINUOUS = 1
-
     sett.DUMMY_READ = False
 
 
-if mode.name=='control':
+if mode=='control':
 
     sett.N_READS = math.inf
-
     sett.READ_MOTIVE_SK = 1
-
     sett.READ_QUERY_FROM_UNITY = 1
-
     sett.WRITE_SK_TO_UNITY = 1
-
     sett.OPEN_CLOSE_CONTINUOUS = 1
-
     sett.DUMMY_READ = False
 
 
@@ -416,10 +401,10 @@ parameters_filename = subject + '_PARAM' + '.txt'
 regressor_filename = subject + '_best_mapping'
 parameters_filename = subject + '_PARAM' + '.txt'
 
-if mode.name=='control':
+if mode=='control':
     data_folder = settings.data_folder
     interface_folder = data_folder + 'interfaces/'
-    # load interface to file
+    # load interface to fileaaaa
     best_mapping = load_obj(interface_folder + regressor_filename)
     parameters = pd.read_csv(data_folder + parameters_filename)
     
@@ -510,6 +495,7 @@ elif input_data == 'quaternions':
     
 
 #if not EXAMPLE_DATA:
+    
 # create unity read query / write skeleton socket
 Read_unity_query = setup(UDP_sett.IP_UNITY, UDP_sett.PORT_UNITY_QUERY, 'UNITY_QUERY', timeout = 0.001)
 Write_unity_sk = Read_unity_query
@@ -567,18 +553,18 @@ if EXAMPLE_DATA:
 start_proc = time.clock()    
 
 while count<sett.N_READS:
-    if mode.name=='avatar':
+    if mode=='avatar':
 
         while count<sett.N_READS:
             # create motive read socket
             # update skeleton
             # close motive read socket
-            (skel) = read_sk_motive(UDP_sett)
+            (skel) = consume_motive_skeleton(Read_motive_sk)
 
             query = ''
 
             # check if unity query
-            unity_query = read(Read_unity_query)
+            unity_query = get_unity_query(Read_unity_query)
 
             # close unity read socket
             # Write_unity_sk.socket.close()
@@ -598,7 +584,7 @@ while count<sett.N_READS:
                 
                 break
 
-    elif mode.name=='acquisition':
+    elif mode =='acquisition':
         
         skel_data_temp = consume_motive_skeleton(Read_motive_sk)
         
@@ -610,11 +596,14 @@ while count<sett.N_READS:
     
         unity_query = get_unity_query(Read_unity_query)
         
+        unity_query = 'a'
     
         # if query : read unity and skeleton, then save to csv
         if unity_query=='a':
         
-            [skel, unity_num] = acquisition_routine(skel, unity_num, Read_motive_sk, Read_unity_query, Read_unity_control, Read_unity_info)
+            skel_data = 1
+            
+            [skel, unity_num] = acquisition_routine(skel, skel_data, unity_num, Read_unity_control, Read_unity_info)
         
         elif unity_query=='q':
     
@@ -622,7 +611,7 @@ while count<sett.N_READS:
             
             break
         
-    if mode.name=='control':
+    if mode == 'control':
         
         if not EXAMPLE_DATA:
         
