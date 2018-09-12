@@ -100,7 +100,7 @@ class HRI_communication_settings():
     
     dummy_read = False
     example_data = True
-    control_preproc_pandas = True
+    control_preproc_pandas = False
     
     n_rigid_bodies_in_skeleton = 21
     n_data_per_rigid_body = 8

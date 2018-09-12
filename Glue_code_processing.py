@@ -600,8 +600,6 @@ while count<sett.N_READS:
     
         # if query : read unity and skeleton, then save to csv
         if unity_query=='a':
-        
-            skel_data = 1
             
             [skel, unity_num] = acquisition_routine(skel, skel_data, unity_num, Read_unity_control, Read_unity_info)
         
