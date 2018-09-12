@@ -10,7 +10,6 @@ Created on Thu Aug 30 15:43:19 2018
 #####################################################
 
 
-import datetime
 
 #import matplotlib.pyplot as plt
 #import os
@@ -21,7 +20,9 @@ import numpy as np
 import pandas as pd
 import socket as soc
 from socket import timeout
+import struct
 import sys
+import datetime
 #
 from HRI_communication_add import *
 #import quaternion_operations as quat_op
@@ -104,7 +105,7 @@ class HRI_communication():
                     'StefanoM' : 'pilot2', 
                     'DavideZ' : 'pilot3'}
         
-        self.subject = self.SUBJECTS['DavideZ']
+        self.subject = ''
         
         
         self.count = 0
@@ -180,7 +181,7 @@ class HRI_communication():
                 if Read_struct.ID == 'MOTIVE_SK':
                     data = []
                     one_rb = b'\x01\x00\x04\x00\xd0hG?\xe7sp?.\xbf\x93\xc0\\f\xbf=$\xd9j?]\xa9\x94=~\x92\xc2>'
-                    for i in range(21):
+                    for i in range(self.settings.n_rigid_bodies_in_skeleton):
                         data = data + one_rb if len(data) else one_rb
                 else:
                     return 't'
@@ -260,10 +261,15 @@ class HRI_communication():
             data_ump = struct.unpack(strs, data)
     
             Q_ORDER = [3, 0, 1, 2]
+            
+            self.data_ump = data_ump
     
-            for i in range(0, len(data_ump) // BONE_S_SIZE):
-                bone = list(data_ump[i*BONE_S_SIZE : (1+i)*BONE_S_SIZE])
-    
+            for i in range(0, len(data_ump) // self.settings.n_data_per_rigid_body):
+                bone = list(data_ump[i*self.settings.n_data_per_rigid_body : (1+i)*self.settings.n_data_per_rigid_body])
+                
+                self.bone = bone
+                self.i = i
+                
                 # print bone
     
     
@@ -279,6 +285,8 @@ class HRI_communication():
                     quaternion = np.vstack((quaternion, [quaternion_t[j] for j in Q_ORDER]))
                 
             ID = np.array(ID)
+            
+            self._debug_udp_process = [ID, position, quaternion]
             
             data = np.c_[ID, position, quaternion]
             
@@ -347,14 +355,12 @@ class HRI_communication():
     
 
     def _get_unity_query(self):
-    
-        query = ''
         
         # read query
         query_data = self._udp_read(self.sockets.read_unity_query)
         unity_query = self._udp_process(query_data, self.sockets.read_unity_query)
              
-#        print ('UNITY query = ', unity_query)
+        print ('UNITY query = ', unity_query)
         
         return unity_query
         
@@ -416,7 +422,7 @@ class HRI_communication():
                 print ('skel = ', skel_data_temp)
             else:
                 print ('skel = full skeleton')
-                skel_data = skel_data_temp
+                self._skel_data = skel_data_temp
         
             unity_query = self._get_unity_query()
             
@@ -425,12 +431,14 @@ class HRI_communication():
         
             # if query : read unity and skeleton, then save to csv
             if unity_query=='a':
-                
-                skel_data = 1
             
-                self._acquisition_routine(skel_data)
+                self._acquisition_routine()
             
             elif unity_query=='q':
+            
+                # store to file
+                
+                self._store_subject_to_file()
         
                 self.close_sockets()
                 
@@ -440,7 +448,7 @@ class HRI_communication():
     #########################
     
     
-    def _acquisition_routine(self, skel_data):
+    def _acquisition_routine(self):
             
         print('collecting data')
     
@@ -458,9 +466,9 @@ class HRI_communication():
             
         # save skel_data in list
         if len(self.skel) == 0:
-            self.skel = [skel_data]
+            self.skel = [self._skel_data]
         else:
-            self.skel.append(skel_data)
+            self.skel.append(self._skel_data)
                              
         # reshape all to 1D array    
         unity_calib = unity_calib.reshape(1, unity_calib.size)
@@ -749,6 +757,36 @@ class HRI_communication():
         self.best_mapping = self.mapp.test_results[self.mapp.best_idx]['reg']
         
         
+    #########################
+    
+    
+    def _store_subject_to_file(self):
+        
+        # process motive skeleton data
+        self.skel_num = self._udp_process(self.skel[0],self.sockets.read_motive_sk)  
+        self.skel_num.resize(1, self.skel_num.size)
+        
+        for i in range(1, len(self.skel)):
+            skel_np_t = self._udp_process(self.skel[i], self.sockets.read_motive_sk)    
+            skel_np_t.resize(1, skel_np_t.size)
+            self.skel_num = np.vstack([self.skel_num, skel_np_t])
+        
+            
+        calib_data = np.c_[self.skel_num, self.unity_num]
+        self.acquired_data = np.vstack([self.data, calib_data])
+        
+        print(str(calib_data[-1, -5]))
+        
+        if calib_data.shape[0]>1 and calib_data.shape[1]>3:
+            filename = self.subject + '_' + datetime.datetime.now().strftime("%Y_%b_%d_%I_%M_%S%p") + '_' + AXIS[calib_data[-1, -5]] + '_' + PHASE[AXIS[calib_data[-1, -5]]][calib_data[-1, -4]]
+        elif self.data.shape[0]==1:
+            print('no data acquired')
+        else:
+            print('problem with data size')
+            
+        np.savetxt(os.path.join(self.settings.data_folder, filename + '.txt'), (self.acquired_data), delimiter=",", fmt="%s")
+    
+    
     #########################
     
     
