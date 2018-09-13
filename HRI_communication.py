@@ -165,6 +165,8 @@ class HRI_communication():
                                        2 : {0 : 'straight', 
                                             1 : 'up', 
                                             2 : 'down'}}}
+                                       
+        self._debug = {}
         
     
     ### PRIVATE FUNCTIONS ###
@@ -519,7 +521,7 @@ class HRI_communication():
     
     def _run_control(self):
         
-        if self.settings.example_data:
+        if self.settings.control_from_dummy_data:
             self.y_true_all = np.empty((len(self.dummy_data), 2))
             self.y_score_all = np.empty((len(self.dummy_data), 2))
             if self.settings.n_readings == np.inf:
@@ -529,10 +531,9 @@ class HRI_communication():
             
         while count<self.settings.n_readings:
         
-            if self.settings.example_data:
+            if self.settings.control_from_dummy_data:
                 
-                # import dummy data
-                a = 0
+                pass
                 
             else:
             
@@ -542,7 +543,7 @@ class HRI_communication():
                     print ('skel = ', skel_data_temp)
                 else:
                     print ('skel = full skeleton')
-                    skel_data = skel_data_temp
+                    self.skel = skel_data_temp
             
             unity_query = self._get_unity_query()
             
@@ -574,11 +575,12 @@ class HRI_communication():
             
         # process skel data and add headers
         
-        if  self.settings.example_data:
+        if  self.settings.control_from_dummy_data:
             skel_num = self.dummy_data[count:count+1]
         else:
-            skel = skel_data
-            skel = self._udp_process(skel)
+            skel_num = self.skel
+            self._debug['skel_num_unproc'] = skel_num
+            skel_num = self._udp_process(skel_num, self.sockets.read_motive_sk)
             
         if self.settings.control_preproc_pandas:
             
@@ -671,7 +673,13 @@ class HRI_communication():
             
 #            print('processing (numpy method)')
             
-            skel = motive_skeleton.skeleton(np.reshape(skel_num[self.motive_header].values, (self.settings.n_rigid_bodies_in_skeleton,-1)))
+            self._debug['skel_num'] = skel_num
+            
+            if self.settings.control_from_dummy_data:
+                skel = motive_skeleton.skeleton(np.reshape(skel_num[self.motive_header].values, (self.settings.n_rigid_bodies_in_skeleton,-1)))
+            else:
+                skel = motive_skeleton.skeleton(skel_num)
+                
             
             skel_base = skel.values
             
@@ -749,23 +757,25 @@ class HRI_communication():
         print('')
         
         #            
-        
-        y_true = self.dummy_data[self.settings.outputs][count:count+1].values
-        
-        self.y_true_all[count] = y_true
         self.y_score_all[count] = y_score
         
         self.res_all = {"reg":self.best_mapping,
                     "reg_type":str(self.best_mapping),
-                    "y_true":self.y_true_all,
                     "y_score":self.y_score_all
                     }
         
+        if self.settings.control_from_dummy_data:
+            y_true = self.dummy_data[self.settings.outputs][count:count+1].values
+            self.y_true_all[count] = y_true
+            self.res_all["y_true"] = self.y_true_all,
+        
         # send commands to 
         
-        Y_score_scaled = y_score/90.0
+        y_score_scaled = y_score/90.0
         
-        controls = Y_score_scaled.tolist()[0] + [0, 0, 0]
+        print(y_score_scaled)
+        
+        controls = y_score_scaled.tolist()[0] + [0, 0, 0]
         
         self._write_commands_to_unity(controls)
         
@@ -779,10 +789,7 @@ class HRI_communication():
         
         self.mapp.import_data(which_user = 'test', clean = False)
         self.dummy_data = HRI.merge_data_df(self.mapp.motion_data_unprocessed['test'])[self.mapp.settings.init_values_to_remove:]
-        self.param.normalization_values = self.mapp.param.normalization_values
-        
-        self.param.normalization_values = self.param.normalization_values.iloc[:,:-2]
-        self.param.normalization_values = self.param.normalization_values[self.regression_header]
+        self.param.normalization_values = self.mapp.param.normalization_values.iloc[:,:-2][self.regression_header]
         
         parameters_val = self.param.normalization_values.values
         
@@ -877,6 +884,15 @@ class HRI_communication():
         self.mapp = HRI_mapping.load_last_for_this_subject(self.mapp)
         
         
+        self.param.normalization_values = self.mapp.param.normalization_values.iloc[:,:-2][self.regression_header]
+        
+        parameters_val = self.param.normalization_values.values
+        
+        self.param.norm_av = parameters_val[0,:].reshape(len(self.settings.used_body_parts),-1)
+        self.param.norm_std = parameters_val[1,:].reshape(len(self.settings.used_body_parts),-1)
+    
+        self.best_mapping = self.mapp.test_results[self.mapp.best_idx]['reg']
+        
     #########################
     
     
@@ -945,6 +961,9 @@ class HRI_communication():
         
         if self.settings.control_from_dummy_data:
             self._import_dummy()
+        else:
+            self.import_mapping()
+            
             
         self.acquired_first_skel = False
         self.regress_data_list = []

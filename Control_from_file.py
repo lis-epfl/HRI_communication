@@ -41,7 +41,8 @@ comm._create_hri_folders()
 
 
 # read dummy data
-comm.settings.control_from_dummy_data = True
+#comm.settings.control_from_dummy_data = True
+#comm.settings.simulate_query = True
 
 # run control
 
