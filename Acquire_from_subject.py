@@ -5,6 +5,7 @@ Created on Wed Sep 12 14:16:07 2018
 @author: macchini
 """
 
+import os
 
 import HRI_communication as hri
 
@@ -26,8 +27,15 @@ comm = hri.HRI_communication()
 # close previous sockets
 comm.close_sockets()
 
+
 # initialize new sockets
 comm.setup_sockets()
+
+
+# DroneDome folder
+comm.settings.data_folder = 'D:\LIS\Matteo'
+comm.settings.interface_folder = os.path.join(comm.data_folder, 'interfaces/')
+
 
 # close previous sockets
 comm.subject = 'pilot_1_1'
