@@ -38,5 +38,8 @@ comm.settings.interface_folder = os.path.join(comm.settings.data_folder, 'interf
 
 
 # run acquisition
-comm.subject = 'pilot_1_1'
+comm.subject = 'pilot_x1'
 comm.run('acquisition')
+
+
+# pilot_x1 - matteo, new calibration method
