@@ -226,7 +226,7 @@ class HRI_communication():
         
         
     def _udp_write(self, msg):
-        self.sockets.unity_write_sk.socket.sendto(msg, (self.sockets.unity_write_sk_client['IP'], self.sockets.unity_write_sk_client['PORT']))
+        self.sockets.write_unity_sk.socket.sendto(msg, (self.sockets.unity_write_sk_client['IP'], self.sockets.unity_write_sk_client['PORT']))
         
         
     #########################
@@ -553,14 +553,14 @@ class HRI_communication():
             if unity_query=='c':
                 
                 self._control_routine(count)
+            
+                count += 1
                 
             elif unity_query=='q':
                 
                 self.close_sockets()
                     
                 break
-            
-            count += 1
             
                 
     #########################
@@ -763,7 +763,9 @@ class HRI_communication():
         
         # send commands to 
         
-        controls = y_score.tolist()
+        Y_score_scaled = y_score/90.0
+        
+        controls = Y_score_scaled.tolist()[0] + [0, 0, 0]
         
         self._write_commands_to_unity(controls)
         
@@ -773,7 +775,7 @@ class HRI_communication():
     
     def _import_dummy(self):
         
-        self.mapp = self.import_mapping()
+        self.import_mapping()
         
         self.mapp.import_data(which_user = 'test', clean = False)
         self.dummy_data = HRI.merge_data_df(self.mapp.motion_data_unprocessed['test'])[self.mapp.settings.init_values_to_remove:]
@@ -867,10 +869,12 @@ class HRI_communication():
     
     def import_mapping(self):
         
-        mapp = HRI_mapping.HRI_mapping()
-        mapp = HRI_mapping.load_last_for_this_subject(mapp)
+        self.mapp = HRI_mapping.HRI_mapping()
         
-        return mapp
+        # point to the same interface folder
+        self.mapp.settings.interface_folder = self.settings.interface_folder
+        
+        self.mapp = HRI_mapping.load_last_for_this_subject(self.mapp)
         
         
     #########################
@@ -939,7 +943,7 @@ class HRI_communication():
     
     def run(self, mode = None):
         
-        if self.settings.simulate_query:
+        if self.settings.control_from_dummy_data:
             self._import_dummy()
             
         self.acquired_first_skel = False
