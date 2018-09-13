@@ -87,7 +87,10 @@ class HRI_communication():
         
         
         self.unity_header_calib = np.char.array([ 'input1', 'input2', 'input3', 'input4', 'roll', 'pitch', 'yaw', 'roll_rate', 'pitch_rate', 'yaw_rate', 'vel_x', 'vel_y', 'vel_z', 'vel_semiloc_x', 'vel_semiloc_y', 'vel_semiloc_z', 'corr_roll', 'corr_pitch', 'pos_x', 'pos_y', 'pos_z', 'rot_x', 'rot_y', 'rot_z', 'rot_w', 'timestamp' ])
-        self.unity_header_info = np.char.array([ 'calib_axis', 'calib_phase', 'is_input_not_zero', 'instance', 'loop counter' ])
+        self.unity_header_info = np.char.array([ 'calib_type', 'calib_info_1', 'calib_info_2', 'is_input_not_zero', 'instance', 'loop counter' ])
+        
+        # calib_info_1 : axis or roll
+        # calib_info_2 : phase or pitch
         
         self.motive_header = np.array(self.motive_header)
         self.unity_header_calib = np.array(self.unity_header_calib)
@@ -135,6 +138,34 @@ class HRI_communication():
         self.y_true_all = np.empty((1000000, 2))
 
         self.y_score_all = np.empty((1000000, 2))
+        
+        
+        
+        self.calib_type_dict = {1 : 'sin',
+                      2 : 'cos_NEW'}
+        
+        self.calib_info_1_dict = {1 : {0 : 'roll', 
+                                       1 : 'pitch'},
+                                  2 : {0 : 'straight', 
+                                       1 : 'right', 
+                                       2 : 'left'}}
+        
+        self.calib_info_2_dict = {1 : {0 : {0 : 'straight', 
+                                            1 : 'up', 
+                                            2 : 'down'},
+                                       1 : {0 : 'straight', 
+                                            1 : 'right', 
+                                            2 : 'left'}},
+                                  2 : {0 : {0 : 'straight', 
+                                            1 : 'up', 
+                                            2 : 'down'},
+                                       1 : {0 : 'straight', 
+                                            1 : 'up', 
+                                            2 : 'down'},
+                                       2 : {0 : 'straight', 
+                                            1 : 'up', 
+                                            2 : 'down'}}}
+        
     
     ### PRIVATE FUNCTIONS ###
     
@@ -196,7 +227,6 @@ class HRI_communication():
         
     def _udp_write(self, msg):
         self.sockets.unity_write_sk.socket.sendto(msg, (self.sockets.unity_write_sk_client['IP'], self.sockets.unity_write_sk_client['PORT']))
-        # print('Sent', msg, towhom.IP, 'port', towhom.PORT)
         
         
     #########################
@@ -271,7 +301,6 @@ class HRI_communication():
                 self.i = i
                 
                 # print bone
-    
     
                 if i == 0:
                     ID = [(int(bin(bone[0])[-8:], 2))]
@@ -732,7 +761,11 @@ class HRI_communication():
                     "y_score":self.y_score_all
                     }
         
-        # send commands to unity
+        # send commands to 
+        
+        controls = y_score.tolist()
+        
+        self._write_commands_to_unity(controls)
         
         
     #########################
@@ -775,16 +808,33 @@ class HRI_communication():
         calib_data = np.c_[self.skel_num, self.unity_num]
         self.acquired_data = np.vstack([self.data, calib_data])
         
-        print(str(calib_data[-1, -5]))
+        calib_type = int(calib_data[-1, -6])
+        calib_info_1 = int(calib_data[-1, -5])
+        calib_info_2 = int(calib_data[-1, -4])
         
+        end_of_filename = self.calib_type_dict[calib_type] + '_' + self.calib_info_1_dict[calib_type][calib_info_1] + '_' + self.calib_info_2_dict[calib_type][calib_info_1][calib_info_2]
+        
+        # create folders in case they don't exist
+        self._create_hri_folders()
+        
+        # save data to txt file
         if calib_data.shape[0]>1 and calib_data.shape[1]>3:
-            filename = self.subject + '_' + datetime.datetime.now().strftime("%Y_%b_%d_%I_%M_%S%p") + '_' + AXIS[calib_data[-1, -5]] + '_' + PHASE[AXIS[calib_data[-1, -5]]][calib_data[-1, -4]]
+            filename = self.subject + '_' + end_of_filename + '_' + datetime.datetime.now().strftime("%Y_%b_%d_%I_%M_%S%p")
         elif self.data.shape[0]==1:
             print('no data acquired')
         else:
             print('problem with data size')
             
         np.savetxt(os.path.join(self.settings.data_folder, filename + '.txt'), (self.acquired_data), delimiter=",", fmt="%s")
+        
+    
+    #########################
+        
+    
+    def _create_hri_folders(self):
+    
+        HRI.create_dir_safe(self.settings.data_folder)
+        HRI.create_dir_safe(self.settings.interface_folder)
     
     
     #########################
@@ -922,7 +972,7 @@ class HRI_communication():
     #########################
         
     
-    def write_sk_to_unity(self, skel):
+    def _write_sk_to_unity(self, skel):
     
         skel_msg = np.reshape(skel[: , :-3], 21 * 8)
         arr = skel_msg.tolist()
@@ -944,11 +994,28 @@ class HRI_communication():
     
         # print(message)
         self._udp_write(message)
+        
+        
+    #########################
+        
     
-        if 0:
-            plt.axis()
-            plt.scatter(count, arr[8*2+1], c = 1)
-            plt.pause(0.0001)
+    def _write_commands_to_unity(self, commands):
+    
+        arr = commands
+    
+        strs = ""
+        
+        # 4 floats
+    
+        for i in range(0, len(arr) // 4):
+                strs += "f"
+    
+        print(arr)
+        # print(len(arr))
+        message = struct.pack('%sf' % len(arr), *arr)
+    
+        # print(message)
+        self._udp_write(message)
         
         
     #########################

@@ -91,7 +91,7 @@ class HRI_communication_settings():
     home_folder = os.path.dirname(os.path.realpath(__file__))
     
     
-    interface_folder = os.path.join(data_folder, 'interfaces/') 
+    interface_folder = os.path.join(data_folder, 'interfaces') 
     
     ####################################################
     # should come from communication structure (so ok) #
