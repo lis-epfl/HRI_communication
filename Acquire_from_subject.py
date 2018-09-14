@@ -33,12 +33,16 @@ comm.setup_sockets()
 
 
 # DroneDome folder
-comm.settings.data_folder = 'D:\LIS\Matteo'
+comm.settings.data_folder = 'D:\\LIS\\Matteo\\DATA\\Acquired_data'
 comm.settings.interface_folder = os.path.join(comm.settings.data_folder, 'interfaces/')
 
 
+#comm.settings.n_readings = 30
+
 # run acquisition
 comm.subject = 'pilot_x1'
+comm.instance = 3
+
 comm.run('acquisition')
 
 
