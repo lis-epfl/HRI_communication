@@ -445,8 +445,6 @@ class HRI_communication():
             
         while count<self.settings.n_readings:
             
-            count += 1
-        
             skel_data_temp = self._consume_motive_skeleton()
             
             if skel_data_temp == 't':
@@ -465,6 +463,8 @@ class HRI_communication():
             
                 self._acquisition_routine()
             
+                count += 1
+                
             elif unity_query=='q':
             
                 # store to file
@@ -828,7 +828,7 @@ class HRI_communication():
         
         # save data to txt file
         if calib_data.shape[0]>1 and calib_data.shape[1]>3:
-            filename = self.subject + '_' + end_of_filename + '_' + datetime.datetime.now().strftime("%Y_%b_%d_%I_%M_%S%p")
+            filename = self.subject + '_' + end_of_filename + '_inst_' + str(self.instance) + '_' + datetime.datetime.now().strftime("%Y_%b_%d_%I_%M_%S%p")
         elif self.data.shape[0]==1:
             print('no data acquired')
         else:
@@ -958,11 +958,6 @@ class HRI_communication():
     
     
     def run(self, mode = None):
-        
-        if self.settings.control_from_dummy_data:
-            self._import_dummy()
-        else:
-            self.import_mapping()
             
             
         self.acquired_first_skel = False
@@ -988,6 +983,11 @@ class HRI_communication():
             self._run_acquisition()
         
         if mode == 'control':
+        
+            if self.settings.control_from_dummy_data:
+                self._import_dummy()
+            else:
+                self.import_mapping()
             
             self._run_control()
         
