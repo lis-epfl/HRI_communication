@@ -40,9 +40,12 @@ class skeleton():
         return range(self.settings.quat_loc, self.settings.quat_loc + self.settings.quat_len)
 
 
-    def keep_used_body_parts(self):
+    def keep_used_body_parts(self, parts = None):
         
-        a = self._search_bone_per_index(self.settings.used_body_parts)
+        if parts is None:
+            parts = self.settings.used_body_parts
+        
+        a = self._search_bone_per_index(parts)
                 
         self.values = self.values[a,:]
     
