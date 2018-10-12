@@ -554,8 +554,6 @@ class HRI_communication():
             
             unity_query = 'c' if self.settings.simulate_query else self._get_unity_query()
             
-            if self.settings.simulate_query:
-                unity_query = 'c'
                 
             # if query : read unity and skeleton, then save to csv
             if unity_query=='c':
