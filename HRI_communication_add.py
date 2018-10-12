@@ -93,6 +93,7 @@ class HRI_communication_settings():
         self.is_final_mapping = True
         self.plot_reg_score = True
         
+        # mac default
         self.data_folder = '/Users/matteomacchini/Google Drive/Matteo/EPFL/LIS/PhD/Natural_Mapping/DATA/acquired_data/'
         self.home_folder = os.path.dirname(os.path.realpath(__file__))
         
