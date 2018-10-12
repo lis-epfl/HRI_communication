@@ -700,7 +700,6 @@ class HRI_communication():
         
             skel_rel= np.copy(skel.values)
         
-            
             # first skel
             if not self.acquired_first_skel:
                 
@@ -729,14 +728,19 @@ class HRI_communication():
             
             skel_norm = np.copy(skel.values)
             
+            # dimensionality reduction
+            if self.mapp.settings.dim_reduction:
+                # used body parts
+                skel.keep_used_body_parts(self.mapp.settings.limbs_reduced)
+            
+                skel_norm = np.copy(skel.values)
+            
             # regression
-            skel.keep_features(self.settings.features_used)
+            skel.keep_features(self.mapp.settings.features_used)
             
             skel_reg = np.copy(skel.values.reshape(1, -1))
             
             y_score = self.best_mapping.predict(skel_reg)
-            
-            
             
             self._debug_control.append({'skel_num' : skel_num,
                                         'skel_bodyparts' : skel_bodyparts,
@@ -748,8 +752,6 @@ class HRI_communication():
                                         'skel_norm' : skel_norm ,
                                         'skel' : skel_reg,
                                         'score' : y_score})
-    
-            
     
             if self.rms_list == None:
                 self.rms_list = []
@@ -885,6 +887,9 @@ class HRI_communication():
         
         # point to the same interface folder
         self.mapp.settings.interface_folder = self.settings.interface_folder
+        
+        # choose subject from communication class data
+        self.mapp.user.settings = self.user.settings
         
         self.mapp = HRI_mapping.load_last_for_this_subject(self.mapp)
         
