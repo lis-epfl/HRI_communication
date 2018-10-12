@@ -49,11 +49,18 @@ comm.setup_sockets()
 
 #comm.settings.n_readings = 30
 
+# dummy acquisition?
+comm.settings.dummy_read = True
+
 # run acquisition
-comm.subject = 'pilot_x1'
-comm.instance = 3
+comm.subject = 'pilot_xx'
+comm.instance = 1
 
 comm.run('acquisition')
 
 
+# pilot_xx - dummy
+
 # pilot_x1 - matteo, new calibration method
+# pilot_x2 - davide, missing 2
+# pilot_x3 - fabian, only pitch
