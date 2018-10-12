@@ -87,7 +87,7 @@ class HRI_communication():
         
         
         self.unity_header_calib = np.char.array([ 'input1', 'input2', 'input3', 'input4', 'roll', 'pitch', 'yaw', 'roll_rate', 'pitch_rate', 'yaw_rate', 'vel_x', 'vel_y', 'vel_z', 'vel_semiloc_x', 'vel_semiloc_y', 'vel_semiloc_z', 'corr_roll', 'corr_pitch', 'pos_x', 'pos_y', 'pos_z', 'rot_x', 'rot_y', 'rot_z', 'rot_w', 'timestamp' ])
-        self.unity_header_info = np.char.array([ 'calib_type', 'calib_info_1', 'calib_info_2', 'is_input_not_zero', 'instance', 'loop counter' ])
+        self.unity_header_info = np.char.array([ 'state', 'maneuver', 'maneuver duration', 'maneuver max amplitude', 'instance', 'loop counter' ])
         
         # calib_info_1 : axis or roll
         # calib_info_2 : phase or pitch
@@ -139,32 +139,16 @@ class HRI_communication():
 
         self.y_score_all = np.empty((1000000, 2))
         
+        self.calib_maneuver_dict = {0 : 'straight', 
+                                    1 : 'just_left', 
+                                    2 : 'just_right', 
+                                    3 : 'just_up', 
+                                    4 : 'just_down', 
+                                    5 : 'up_right', 
+                                    6 : 'up_left', 
+                                    7 : 'down_right', 
+                                    8 : 'down_left'}
         
-        
-        self.calib_type_dict = {1 : 'sin',
-                      2 : 'cos_NEW'}
-        
-        self.calib_info_1_dict = {1 : {0 : 'roll', 
-                                       1 : 'pitch'},
-                                  2 : {0 : 'straight', 
-                                       1 : 'right', 
-                                       2 : 'left'}}
-        
-        self.calib_info_2_dict = {1 : {0 : {0 : 'straight', 
-                                            1 : 'up', 
-                                            2 : 'down'},
-                                       1 : {0 : 'straight', 
-                                            1 : 'right', 
-                                            2 : 'left'}},
-                                  2 : {0 : {0 : 'straight', 
-                                            1 : 'up', 
-                                            2 : 'down'},
-                                       1 : {0 : 'straight', 
-                                            1 : 'up', 
-                                            2 : 'down'},
-                                       2 : {0 : 'straight', 
-                                            1 : 'up', 
-                                            2 : 'down'}}}
                                        
         self._debug = {}
         
@@ -358,7 +342,7 @@ class HRI_communication():
     #         print("Byte Length of Message :", len(data), "\n")
             strs = ""
             for i in range(0, len(data)//4):
-                strs += "i"
+                strs += "f"
     
             # print(strs)
             # print(len(data))
@@ -820,15 +804,20 @@ class HRI_communication():
             skel_np_t.resize(1, skel_np_t.size)
             self.skel_num = np.vstack([self.skel_num, skel_np_t])
         
+        # bugfix different length
+        if len(self.skel_num) > len(self.unity_num):
+            self.skel_num = self.skel_num[:-1]
+        elif len(self.skel_num) < len(self.unity_num):
+            self.unity_num = self.unity_num[:-1]
             
         calib_data = np.c_[self.skel_num, self.unity_num]
         self.acquired_data = np.vstack([self.data, calib_data])
         
-        calib_type = int(calib_data[-1, -6])
-        calib_info_1 = int(calib_data[-1, -5])
-        calib_info_2 = int(calib_data[-1, -4])
+        info_maneuver =  self.calib_maneuver_dict[int(calib_data[-1, -5])]
+        info_period = str(int(calib_data[-1, -4]))
+        info_amplitude = str(int(calib_data[-1, -3]*100))
         
-        end_of_filename = self.calib_type_dict[calib_type] + '_' + self.calib_info_1_dict[calib_type][calib_info_1] + '_' + self.calib_info_2_dict[calib_type][calib_info_1][calib_info_2]
+        end_of_filename = info_maneuver + '_period_' + info_period + '_amplitude_' + info_amplitude
         
         # create folders in case they don't exist
         self._create_hri_folders()
