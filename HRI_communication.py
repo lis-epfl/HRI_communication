@@ -206,10 +206,15 @@ class HRI_communication():
         # print('\nREADING FROM', Read_struct.type, '\n')
         # receive data from client (data, addr)
     
+    
+        # try to read package through UDP
         try:
             data, addr = Read_struct.socket.recvfrom(4096)
+            
+        # if connection times out
         except timeout:
             
+            # if you want a dummy msg
             if self.settings.dummy_read:
                 if Read_struct.ID == 'MOTIVE_SK':
                     data = []
@@ -218,6 +223,8 @@ class HRI_communication():
                         data = data + one_rb if len(data) else one_rb
                 else:
                     return 't'
+            
+            # else just return a 't' char
             else:
                 return 't'
             
