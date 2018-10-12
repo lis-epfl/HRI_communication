@@ -552,7 +552,7 @@ class HRI_communication():
                     print ('skel = full skeleton')
                     self.skel = skel_data_temp
             
-            unity_query = self._get_unity_query()
+            unity_query = 'c' if self.settings.simulate_query else self._get_unity_query()
             
             if self.settings.simulate_query:
                 unity_query = 'c'
